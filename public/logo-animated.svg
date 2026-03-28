@@ -1,0 +1,96 @@
+<svg viewBox="0 0 600 200" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="barGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:#00FF88;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#4488FF;stop-opacity:1" />
+    </linearGradient>
+
+    <filter id="glowPulse">
+      <feGaussianBlur stdDeviation="3" result="coloredBlur"/>
+      <feMerge>
+        <feMergeNode in="coloredBlur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+
+    <style>
+      @keyframes textFadeIn {
+        from {
+          opacity: 0;
+        }
+        to {
+          opacity: 1;
+        }
+      }
+
+      @keyframes barExpand {
+        from {
+          x: 270;
+          width: 60;
+        }
+        to {
+          x: 0;
+          width: 600;
+        }
+      }
+
+      @keyframes glowPulse {
+        0%, 100% {
+          opacity: 0.3;
+          filter: drop-shadow(0 0 4px rgba(0, 255, 136, 0.4));
+        }
+        50% {
+          opacity: 0.6;
+          filter: drop-shadow(0 0 12px rgba(68, 136, 255, 0.6));
+        }
+      }
+
+      .logo-text {
+        animation: textFadeIn 0.8s ease-out forwards;
+      }
+
+      .accent-bar {
+        animation: barExpand 1.5s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+      }
+
+      .bar-glow {
+        animation: glowPulse 2s ease-in-out 1.5s infinite;
+      }
+    </style>
+  </defs>
+
+  <!-- Main text container (fades in) -->
+  <g class="logo-text">
+    <!-- MATCHDAY text -->
+    <text x="30" y="70" font-family="Arial, sans-serif" font-size="48" font-weight="900" fill="#E8E8EF" letter-spacing="2">
+      MATCHDAY
+    </text>
+
+    <!-- GLOBAL text (lighter weight, below) -->
+    <text x="30" y="125" font-family="Arial, sans-serif" font-size="32" font-weight="400" fill="#E8E8EF" letter-spacing="1.5">
+      GLOBAL
+    </text>
+  </g>
+
+  <!-- Accent bar: expands from center to full width -->
+  <g>
+    <!-- Bar with glow effect (starts after expand, loops) -->
+    <rect class="bar-glow" x="0" y="145" width="600" height="4" fill="url(#barGradient)" opacity="0" style="display: none;" />
+
+    <!-- Main animated bar (expands then becomes permanent) -->
+    <rect class="accent-bar" x="270" y="145" width="60" height="4" fill="url(#barGradient)" rx="2" />
+
+    <!-- Static bar after animation completes (for permanent display) -->
+    <rect x="0" y="145" width="600" height="4" fill="url(#barGradient)" rx="2" opacity="0">
+      <animate attributeName="opacity" from="0" to="1" dur="0.1s" begin="1.5s" />
+    </rect>
+
+    <!-- Glow pulse on the bar (starts after bar expansion completes) -->
+    <g>
+      <rect x="0" y="145" width="600" height="4" fill="url(#barGradient)" rx="2" opacity="0.3" filter="url(#glowPulse)">
+        <animate attributeName="opacity" from="0.3" to="0.6" dur="2s" begin="1.5s" repeatCount="indefinite" />
+      </rect>
+      <animate attributeName="filter" values="drop-shadow(0 0 4px rgba(0, 255, 136, 0.4));drop-shadow(0 0 12px rgba(68, 136, 255, 0.6));drop-shadow(0 0 4px rgba(0, 255, 136, 0.4))" dur="2s" begin="1.5s" repeatCount="indefinite" />
+    </g>
+  </g>
+</svg>
