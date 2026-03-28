@@ -6,11 +6,11 @@
 import Image from "next/image";
 import Link from "next/link";
 import {
-  ARTICLES,
-  getFeaturedArticle,
-  getLatestArticles,
-  getTransferArticles,
-  getTrendingArticles,
+  ARTICLES as STATIC_ARTICLES,
+  getFeaturedArticle as getStaticFeatured,
+  getLatestArticles as getStaticLatest,
+  getTransferArticles as getStaticTransfers,
+  getTrendingArticles as getStaticTrending,
   formatRelativeTime,
   CATEGORY_COLORS,
   type Article,
@@ -24,6 +24,7 @@ import {
   parseScores,
   LEAGUE_META,
 } from "@/lib/sportmonks";
+import { fetchLiveNews } from "@/lib/news";
 
 export const revalidate = 30;
 
@@ -43,10 +44,30 @@ export default async function HomePage() {
     plStandings = [];
   }
 
-  const featured = getFeaturedArticle();
-  const latest = getLatestArticles(12).filter((a) => !a.featured);
-  const transfers = getTransferArticles();
-  const trending = getTrendingArticles();
+  // Fetch live news from RSS — fall back to static content
+  let liveArticles: Article[] = [];
+  try {
+    liveArticles = await fetchLiveNews();
+  } catch {
+    liveArticles = [];
+  }
+
+  // Use live news if available, otherwise fall back to static
+  const hasLiveNews = liveArticles.length >= 5;
+  const ARTICLES = hasLiveNews ? liveArticles : STATIC_ARTICLES;
+
+  const featured = hasLiveNews
+    ? liveArticles.find((a) => a.featured) || liveArticles[0]
+    : getStaticFeatured();
+  const latest = hasLiveNews
+    ? liveArticles.filter((a) => !a.featured).slice(0, 12)
+    : getStaticLatest(12).filter((a) => !a.featured);
+  const transfers = hasLiveNews
+    ? liveArticles.filter((a) => a.category === "Transfers")
+    : getStaticTransfers();
+  const trending = hasLiveNews
+    ? liveArticles.filter((a) => a.trending).slice(0, 4)
+    : getStaticTrending();
 
   // Sort standings
   const sortedStandings = [...(plStandings || [])]
@@ -287,7 +308,7 @@ export default async function HomePage() {
           {/* ==== PREDICTIONS CTA ==== */}
           <div className="mg-cta">
             <div className="text-lg font-bold text-white mb-1" style={{ fontFamily: "Oswald, sans-serif" }}>
-              MATCH PREDCCTIONS
+              MATCH PREDICTIONS
             </div>
             <p className="text-sm text-mg-text-muted mb-4">
               Test your football knowledge. Predict scores for upcoming matches.
