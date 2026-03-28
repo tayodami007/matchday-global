@@ -1,0 +1,47 @@
+<svg viewBox="0 0 400 400" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="borderGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#00FF88;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#4488FF;stop-opacity:1" />
+    </linearGradient>
+    <linearGradient id="shieldGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#00FF88;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#4488FF;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+
+  <!-- Dark background circle -->
+  <circle cx="200" cy="200" r="200" fill="#0A0A0F"/>
+
+  <!-- Border gradient -->
+  <circle cx="200" cy="200" r="198" fill="none" stroke="url(#borderGradient)" stroke-width="2"/>
+
+  <!-- Shield mark centered -->
+  <g id="shield-mark" transform="translate(200, 200) scale(1.2)">
+    <!-- Shield outline -->
+    <path d="M 0 -90 L 85 -50 L 85 20 Q 85 70 0 105 Q -85 70 -85 20 L -85 -50 Z"
+          fill="url(#shieldGradient)"
+          stroke="none"/>
+
+    <!-- M letter inside shield -->
+    <g id="letter-m">
+      <!-- Left leg -->
+      <rect x="-50" y="-40" width="16" height="80" fill="#0A0A0F" rx="2"/>
+
+      <!-- Center peak -->
+      <polygon points="-25,-40 -25,-10 0,-40 25,-10 25,-40"
+               fill="#0A0A0F"/>
+
+      <!-- Right leg -->
+      <rect x="34" y="-10" width="16" height="70" fill="#0A0A0F" rx="2"/>
+
+      <!-- Top connecting bar -->
+      <rect x="-50" y="-45" width="100" height="8" fill="#0A0A0F" rx="1"/>
+    </g>
+
+    <!-- Lightning bolt accent -->
+    <path d="M 30 -20 L 20 10 L 30 10 L 5 50 L 18 20 L 8 20 Z"
+          fill="#0A0A0F"
+          opacity="0.8"/>
+  </g>
+</svg>
