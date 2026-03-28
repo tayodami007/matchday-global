@@ -95,14 +95,21 @@ const FALLBACK_IMAGES = [
 function detectCategory(title: string, description: string): ArticleCategory {
   const text = `${title} ${description}`.toLowerCase();
 
-  if (text.includes("transfer") || text.includes("sign") || text.includes("deal") || text.includes("bid") || text.includes("gossip") || text.includes("move")) return "Transfers";
+  // International FIRST — "world cup", "friendly", etc. must beat generic words like "move"
+  if (text.includes("world cup") || text.includes("euro 20") || text.includes("nations league") || text.includes("qualifier") || text.includes("friendly") || text.includes("play-off")) return "International";
+  // National teams — check before transfers so "Scotland move" doesn't become a transfer story
+  if (text.includes("england") || text.includes("scotland") || text.includes("wales") || text.includes("ireland") || text.includes("france") || text.includes("germany") || text.includes("spain") || text.includes("italy") || text.includes("brazil") || text.includes("argentina")) {
+    if (text.includes("international") || text.includes("caps") || text.includes("squad") || text.includes("manager") || text.includes("coach") || text.includes("national")) return "International";
+  }
   if (text.includes("champions league") || text.includes("ucl")) return "Champions League";
   if (text.includes("europa league") || text.includes("conference league")) return "Champions League";
+  if (text.includes("transfer") || text.includes("deal") || text.includes("bid") || text.includes("gossip")) return "Transfers";
+  // "sign" and "move" only count as transfers if combined with transfer-adjacent words
+  if ((text.includes("sign") || text.includes("move")) && (text.includes("club") || text.includes("fee") || text.includes("target") || text.includes("interest") || text.includes("offer") || text.includes("£") || text.includes("million"))) return "Transfers";
   if (text.includes("la liga") || text.includes("real madrid") || text.includes("barcelona") || text.includes("atletico")) return "La Liga";
   if (text.includes("bundesliga") || text.includes("bayern") || text.includes("dortmund")) return "Bundesliga";
   if (text.includes("serie a") || text.includes("juventus") || text.includes("inter milan") || text.includes("napoli")) return "Serie A";
   if (text.includes("ligue 1") || text.includes("psg") || text.includes("marseille")) return "Ligue 1";
-  if (text.includes("world cup") || text.includes("euro 20") || text.includes("nations league") || text.includes("international") || text.includes("qualifier") || text.includes("friendly")) return "International";
   if (text.includes("tactical") || text.includes("analysis") || text.includes("xg") || text.includes("stats")) return "Analysis";
   // Default to Premier League for BBC Sport (their primary coverage)
   return "Premier League";
@@ -175,13 +182,21 @@ function parseRSSItem(itemXml: string): Partial<Article> | null {
 
 function parseRSSFeed(xml: string): Article[] {
   const items: Article[] = [];
+  const seenIds = new Set<string>();
+  const seenTitles = new Set<string>();
   const itemRegex = /<item>([\s\S]*?)<\/item>/g;
   let match;
 
   while ((match = itemRegex.exec(xml)) !== null) {
     const parsed = parseRSSItem(match[1]);
     if (parsed && parsed.id && parsed.title) {
-      items.push(parsed as Article);
+      // Deduplicate by both ID and title (BBC feeds can have near-identical items)
+      const titleKey = parsed.title.toLowerCase().trim();
+      if (!seenIds.has(parsed.id) && !seenTitles.has(titleKey)) {
+        seenIds.add(parsed.id);
+        seenTitles.add(titleKey);
+        items.push(parsed as Article);
+      }
     }
   }
 
