@@ -30,8 +30,8 @@ export const revalidate = 120;
 export default async function HomePage() {
   // Fetch live data (graceful fallback)
   const today = new Date().toISOString().split("T")[0];
-  let todayFixtures;
-  let plStandings;
+  let todayFixtures: Awaited<ReturnType<typeof getFixturesByDate>> = [];
+  let plStandings: Awaited<ReturnType<typeof getStandingsBySeason>> = [];
   try {
     todayFixtures = await getFixturesByDate(today);
   } catch {
