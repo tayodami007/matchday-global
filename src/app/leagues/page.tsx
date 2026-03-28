@@ -65,7 +65,7 @@ const LEAGUE_INFO: Record<
 };
 
 export default async function LeaguesPage() {
-  let leagues;
+  let leagues: Awaited<ReturnType<typeof getLeagues>> = [];
   try {
     leagues = await getLeagues();
   } catch {
