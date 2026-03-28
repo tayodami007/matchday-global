@@ -1,3 +1,8 @@
+// ============================================================
+// MATCHDAYGLOBAL — MATCH DETAIL PAGE
+// Detailed view of a single fixture
+// ============================================================
+
 import {
   getFixtureById,
   parseScores,
@@ -5,359 +10,324 @@ import {
   getHomeTeam,
   getAwayTeam,
   formatDate,
+  formatTime,
 } from "@/lib/sportmonks";
 import type { Metadata } from "next";
 import Image from "next/image";
+import Link from "next/link";
 
-export const revalidate = 30;
-
-type PageProps = { params: Promise<{ id: string }> };
-
-export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}): Promise<Metadata> {
   const { id } = await params;
-  const fixture = await getFixtureById(Number(id));
+  const fixture = await getFixtureById(parseInt(id, 10));
   if (!fixture) return { title: "Match Not Found" };
   const home = getHomeTeam(fixture);
   const away = getAwayTeam(fixture);
   return {
-    title: `${home?.name || "Home"} vs ${away?.name || "Away"} — Live Score & Stats`,
-    description: `Follow ${home?.name} vs ${away?.name} live on MatchdayGlobal. Real-time score, events, statistics, and community.`,
+    title: `${home?.name || "Home"} vs ${away?.name || "Away"} — Match Details`,
+    description: `Live score, events, and statistics for ${home?.name} vs ${away?.name}.`,
   };
 }
 
-export default async function MatchPage({ params }: PageProps) {
+export const revalidate = 30;
+
+export default async function MatchDetailPage({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}) {
   const { id } = await params;
-  const fixture = await getFixtureById(Number(id));
+  const fixture = await getFixtureById(parseInt(id, 10));
 
   if (!fixture) {
     return (
-      <div className="flex min-h-[60vh] items-center justify-center">
-        <div className="text-center">
-          <h1 className="text-2xl font-bold text-white">Match Not Found</h1>
-          <p className="mt-2 text-mg-text-muted">
-            This match doesn&apos;t exist or isn&apos;t available.
-          </p>
-          <a
-            href="/"
-            className="mt-6 inline-flex rounded-full bg-mg-card px-6 py-2.5 text-sm font-semibold text-mg-accent hover:bg-mg-card-hover"
-          >
-            Back to Home
-          </a>
-        </div>
+      <div className="mx-auto max-w-4xl px-4 py-16 text-center">
+        <h1 className="text-2xl font-bold text-white">Match not found</h1>
+        <p className="mt-2 text-mg-text-muted">
+          This match may not exist or the data is unavailable.
+        </p>
+        <Link href="/" className="mt-4 inline-block text-mg-accent">
+          ← Back to Home
+        </Link>
       </div>
     );
   }
 
   const home = getHomeTeam(fixture);
   const away = getAwayTeam(fixture);
-  const scores = parseScores(fixture);
   const status = getMatchStatus(fixture);
-  const events = fixture.events || [];
+  const scores = parseScores(fixture);
 
   // Sort events by minute
-  const sortedEvents = [...events].sort((a, b) => a.minute - b.minute);
-
-  // Get statistics
-  const stats = fixture.statistics || [];
-  const homeStats = stats.filter(
-    (s) => s.participant_id === home?.id
-  );
-  const awayStats = stats.filter(
-    (s) => s.participant_id === away?.id
+  const events = [...(fixture.events || [])].sort(
+    (a, b) => a.minute - b.minute
   );
 
-  return (
-    <div>
-      {/* Match Hero */}
-      <section className="relative overflow-hidden border-b border-mg-border bg-mg-surface">
-        <div className="absolute inset-0 overflow-hidden">
-          <div className="absolute -top-[40%] -left-[20%] h-[80%] w-[60%] rounded-full bg-[#00ff88]/[0.02] blur-[100px]" />
-          <div className="absolute -right-[20%] top-[20%] h-[60%] w-[40%] rounded-full bg-[#4488ff]/[0.02] blur-[100px]" />
-        </div>
-
-        <div className="relative mx-auto max-w-4xl px-4 py-10 sm:px-6 sm:py-16">
-          {/* League + Date */}
-          <div className="mb-8 flex items-center justify-center gap-3">
-            {fixture.league?.image_path && (
-              <Image
-                src={fixture.league.image_path}
-                alt={fixture.league.name}
-                width={20}
-                height={20}
-                className="h-5 w-5 object-contain"
-              />
-            )}
-            <span className="text-sm font-medium text-mg-text-muted">
-              {fixture.league?.name}
-            </span>
-            <span className="text-mg-border">&middot;</span>
-            <span className="text-sm text-mg-text-muted">
-              {formatDate(fixture.starting_at)}
-            </span>
-          </div>
-
-          {/* Scoreboard */}
-          <div className="flex items-center justify-center gap-6 sm:gap-12">
-            {/* Home Team */}
-            <div className="flex flex-col items-center gap-3 text-center">
-              {home?.image_path && (
-                <Image
-                  src={home.image_path}
-                  alt={home.name}
-                  width={72}
-                  height={72}
-                  className="h-16 w-16 object-contain sm:h-[72px] sm:w-[72px]"
-                />
-              )}
-              <span className="max-w-[120px] text-sm font-bold text-white sm:text-base">
-                {home?.name || "Home"}
-              </span>
-            </div>
-
-            {/* Score */}
-            <div className="flex flex-col items-center gap-2">
-              {status.isLive && (
-                <div className="mb-1 flex items-center gap-1.5">
-                  <span className="relative flex h-2 w-2">
-                    <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-mg-red opacity-75" />
-                    <span className="relative inline-flex h-2 w-2 rounded-full bg-mg-red" />
-                  </span>
-                  <span className="text-xs font-bold uppercase text-mg-red">
-                    Live
-                  </span>
-                </div>
-              )}
-              <div className="flex items-center gap-3">
-                <span className="text-5xl font-black text-white sm:text-7xl">
-                  {status.isUpcoming ? "-" : scores.home}
-                </span>
-                <span className="text-2xl font-light text-mg-text-muted sm:text-3xl">
-                  :
-                </span>
-                <span className="text-5xl font-black text-white sm:text-7xl">
-                  {status.isUpcoming ? "-" : scores.away}
-                </span>
-              </div>
-              <span
-                className={`text-sm font-semibold ${
-                  status.isLive
-                    ? "text-mg-red"
-                    : status.isFinished
-                      ? "text-mg-text-muted"
-                      : "text-mg-accent"
-                }`}
-              >
-                {status.displayText}
-              </span>
-            </div>
-
-            {/* Away Team */}
-            <div className="flex flex-col items-center gap-3 text-center">
-              {away?.image_path && (
-                <Image
-                  src={away.image_path}
-                  alt={away.name}
-                  width={72}
-                  height={72}
-                  className="h-16 w-16 object-contain sm:h-[72px] sm:w-[72px]"
-                />
-              )}
-              <span className="max-w-[120px] text-sm font-bold text-white sm:text-base">
-                {away?.name || "Away"}
-              </span>
-            </div>
-          </div>
-
-          {/* Prediction CTA */}
-          {status.isUpcoming && (
-            <div className="mt-8 flex justify-center">
-              <button className="rounded-full bg-gradient-to-r from-[#00ff88] to-[#4488ff] px-8 py-3 text-sm font-bold text-black shadow-lg shadow-[#00ff88]/20">
-                Predict This Match
-              </button>
-            </div>
-          )}
-        </div>
-      </section>
-
-      {/* Content Area */}
-      <div className="mx-auto max-w-4xl px-4 py-8 sm:px-6">
-        <div className="grid gap-6 md:grid-cols-2">
-          {/* Match Events Timeline */}
-          <div className="mg-card overflow-hidden">
-            <div className="border-b border-mg-border px-4 py-3">
-              <h2 className="text-sm font-bold text-white">Match Events</h2>
-            </div>
-            {sortedEvents.length === 0 ? (
-              <div className="px-4 py-8 text-center text-sm text-mg-text-muted">
-                {status.isUpcoming
-                  ? "Events will appear here once the match starts."
-                  : "No events recorded for this match."}
-              </div>
-            ) : (
-              <div className="divide-y divide-mg-border">
-                {sortedEvents.map((event) => {
-                  const isHome = event.participant_id === home?.id;
-                  const typeName =
-                    event.type?.developer_name || event.type?.name || "";
-                  const icon = getEventIcon(typeName);
-
-                  return (
-                    <div
-                      key={event.id}
-                      className={`flex items-start gap-3 px-4 py-3 ${isHome ? "" : "flex-row-reverse text-right"}`}
-                    >
-                      <div className="flex shrink-0 flex-col items-center">
-                        <span className="text-xs font-bold text-mg-accent">
-                          {event.minute}&apos;
-                          {event.extra_minute
-                            ? `+${event.extra_minute}`
-                            : ""}
-                        </span>
-                      </div>
-                      <span className="text-base">{icon}</span>
-                      <div className="min-w-0">
-                        <p className="text-sm font-semibold text-white">
-                          {event.player_name || "Unknown Player"}
-                        </p>
-                        {event.related_player_name && (
-                          <p className="text-xs text-mg-text-muted">
-                            {event.info || "Assist:"}{" "}
-                            {event.related_player_name}
-                          </p>
-                        )}
-                        <p className="text-xs text-mg-text-muted">
-                          {event.type?.name || typeName}
-                        </p>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            )}
-          </div>
-
-          {/* Match Statistics */}
-          <div className="mg-card overflow-hidden">
-            <div className="border-b border-mg-border px-4 py-3">
-              <h2 className="text-sm font-bold text-white">Statistics</h2>
-            </div>
-            {homeStats.length === 0 && awayStats.length === 0 ? (
-              <div className="px-4 py-8 text-center text-sm text-mg-text-muted">
-                {status.isUpcoming
-                  ? "Statistics will appear here once the match starts."
-                  : "No statistics available for this match."}
-              </div>
-            ) : (
-              <div className="divide-y divide-mg-border px-4">
-                {getStatPairs(homeStats, awayStats).map((pair) => (
-                  <StatBar
-                    key={pair.label}
-                    label={pair.label}
-                    homeValue={pair.homeValue}
-                    awayValue={pair.awayValue}
-                  />
-                ))}
-              </div>
-            )}
-          </div>
-        </div>
-
-        {/* Community Section Placeholder */}
-        <div className="mt-8 mg-card overflow-hidden">
-          <div className="border-b border-mg-border px-4 py-3">
-            <h2 className="text-sm font-bold text-white">Match Discussion</h2>
-          </div>
-          <div className="flex flex-col items-center px-4 py-12 text-center">
-            <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-mg-accent/10">
-              <svg className="h-6 w-6 text-mg-accent" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M7.5 8.25h9m-9 3H12m-9.75 1.51c0 1.6 1.123 2.994 2.707 3.227 1.129.166 2.27.293 3.423.379.35.026.67.21.865.501L12 21l2.755-4.133a1.14 1.14 0 01.865-.501 48.172 48.172 0 003.423-.379c1.584-.233 2.707-1.626 2.707-3.228V6.741c0-1.602-1.123-2.995-2.707-3.228A48.394 48.394 0 0012 3c-2.392 0-4.744.175-7.043.513C3.373 3.746 2.25 5.14 2.25 6.741v6.018z" />
-              </svg>
-            </div>
-            <h3 className="text-base font-bold text-white">
-              Join the conversation
-            </h3>
-            <p className="mt-1 max-w-xs text-sm text-mg-text-muted">
-              Sign up to discuss this match with fans from around the world.
-            </p>
-            <button className="mt-4 rounded-full bg-gradient-to-r from-[#00ff88] to-[#4488ff] px-6 py-2 text-sm font-bold text-black">
-              Join Free
-            </button>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-// Helper: get event icon
-function getEventIcon(typeName: string): string {
-  const lower = typeName.toLowerCase();
-  if (lower.includes("goal")) return "\u26BD";
-  if (lower.includes("yellowcard") || lower.includes("yellow_card")) return "\uD83D\uDFE8";
-  if (lower.includes("redcard") || lower.includes("red_card")) return "\uD83D\uDFE5";
-  if (lower.includes("substitution")) return "\uD83D\uDD04";
-  if (lower.includes("var")) return "\uD83D\uDCFA";
-  if (lower.includes("penalty")) return "\uD83C\uDFAF";
-  return "\u2022";
-}
-
-// Helper: pair home/away stats
-function getStatPairs(
-  homeStats: { type_id: number; data: { value: number | string }; type?: { name: string } }[],
-  awayStats: { type_id: number; data: { value: number | string }; type?: { name: string } }[]
-) {
-  const pairs: {
-    label: string;
-    homeValue: number;
-    awayValue: number;
-  }[] = [];
-
-  const homeMap = new Map(homeStats.map((s) => [s.type_id, s]));
-
-  for (const hs of homeStats) {
-    const as = awayStats.find((a) => a.type_id === hs.type_id);
-    if (as) {
-      pairs.push({
-        label: hs.type?.name || `Stat ${hs.type_id}`,
-        homeValue: Number(hs.data.value) || 0,
-        awayValue: Number(as.data.value) || 0,
-      });
-    }
+  // Event icon helper
+  function getEventIcon(typeName: string) {
+    const name = typeName.toLowerCase();
+    if (name.includes("goal")) return "⚽";
+    if (name.includes("yellowcard") || name.includes("yellow")) return "🟨";
+    if (name.includes("redcard") || name.includes("red")) return "🟥";
+    if (name.includes("substitution")) return "🔄";
+    if (name.includes("penalty") && name.includes("missed")) return "❌";
+    return "📋";
   }
 
-  return pairs.slice(0, 10); // Limit to 10 stats
-}
-
-// Stat bar component
-function StatBar({
-  label,
-  homeValue,
-  awayValue,
-}: {
-  label: string;
-  homeValue: number;
-  awayValue: number;
-}) {
-  const total = homeValue + awayValue || 1;
-  const homePercent = (homeValue / total) * 100;
-  const awayPercent = (awayValue / total) * 100;
-
   return (
-    <div className="py-3">
-      <div className="mb-1.5 flex items-center justify-between text-sm">
-        <span className="font-semibold text-white">{homeValue}</span>
-        <span className="text-xs font-medium text-mg-text-muted">{label}</span>
-        <span className="font-semibold text-white">{awayValue}</span>
+    <div className="mx-auto max-w-4xl px-4 sm:px-6 py-6">
+      {/* Breadcrumb */}
+      <div className="flex items-center gap-2 text-xs text-mg-text-dim mb-6">
+        <Link href="/" className="hover:text-mg-accent transition-colors">
+          Home
+        </Link>
+        <span>/</span>
+        <Link
+          href="/predictions"
+          className="hover:text-mg-accent transition-colors"
+        >
+          Matches
+        </Link>
+        <span>/</span>
+        <span className="text-mg-text-muted">
+          {home?.name} vs {away?.name}
+        </span>
       </div>
-      <div className="flex gap-1 overflow-hidden rounded-full">
-        <div
-          className="h-1.5 rounded-full bg-mg-blue transition-all"
-          style={{ width: `${homePercent}%` }}
-        />
-        <div
-          className="h-1.5 rounded-full bg-mg-text-muted/30 transition-all"
-          style={{ width: `${awayPercent}%` }}
-        />
+
+      {/* Match header card */}
+      <div className="mg-card mb-6">
+        {/* League info */}
+        <div className="flex items-center justify-center gap-2 border-b border-mg-border px-4 py-2">
+          {fixture.league?.image_path && (
+            <Image
+              src={fixture.league.image_path}
+              alt={fixture.league?.name || ""}
+              width={16}
+              height={16}
+              className="h-4 w-4 object-contain"
+            />
+          )}
+          <span className="text-xs text-mg-text-muted">
+            {fixture.league?.name || "League"}
+          </span>
+          <span className="text-xs text-mg-text-dim">•</span>
+          <span className="text-xs text-mg-text-dim">
+            {formatDate(fixture.starting_at)}
+          </span>
+        </div>
+
+        {/* Score area */}
+        <div className="flex items-center justify-center gap-8 py-10 px-6">
+          {/* Home */}
+          <div className="flex flex-col items-center gap-3 flex-1">
+            {home?.image_path && (
+              <Image
+                src={home.image_path}
+                alt={home.name}
+                width={72}
+                height={72}
+                className="h-[72px] w-[72px] object-contain"
+              />
+            )}
+            <span className="text-base font-bold text-white text-center">
+              {home?.name || "Home"}
+            </span>
+          </div>
+
+          {/* Score */}
+          <div className="flex flex-col items-center gap-1">
+            {status.isFinished || status.isLive ? (
+              <div className="flex items-center gap-4">
+                <span
+                  className={`text-5xl font-black ${
+                    status.isLive ? "text-mg-accent" : "text-white"
+                  }`}
+                  style={{ fontFamily: "Oswald, sans-serif" }}
+                >
+                  {scores.home}
+                </span>
+                <span className="text-2xl text-mg-text-dim font-light">:</span>
+                <span
+                  className={`text-5xl font-black ${
+                    status.isLive ? "text-mg-accent" : "text-white"
+                  }`}
+                  style={{ fontFamily: "Oswald, sans-serif" }}
+                >
+                  {scores.away}
+                </span>
+              </div>
+            ) : (
+              <span
+                className="text-3xl font-bold text-mg-text-muted"
+                style={{ fontFamily: "Oswald, sans-serif" }}
+              >
+                {formatTime(fixture.starting_at)}
+              </span>
+            )}
+            <div className="mt-1">
+              {status.isLive ? (
+                <span className="mg-badge bg-mg-red text-white">
+                  <span className="h-1.5 w-1.5 rounded-full bg-white mg-live-pulse" />
+                  LIVE {status.displayText}
+                </span>
+              ) : status.isFinished ? (
+                <span className="mg-badge bg-mg-surface-3 text-mg-text-muted">
+                  Full Time
+                </span>
+              ) : (
+                <span className="mg-badge bg-mg-surface-3 text-mg-text-muted">
+                  Upcoming
+                </span>
+              )}
+            </div>
+          </div>
+
+          {/* Away */}
+          <div className="flex flex-col items-center gap-3 flex-1">
+            {away?.image_path && (
+              <Image
+                src={away.image_path}
+                alt={away.name}
+                width={72}
+                height={72}
+                className="h-[72px] w-[72px] object-contain"
+              />
+            )}
+            <span className="text-base font-bold text-white text-center">
+              {away?.name || "Away"}
+            </span>
+          </div>
+        </div>
+      </div>
+
+      {/* Match events */}
+      {events.length > 0 && (
+        <div className="mg-widget mb-6">
+          <div className="mg-widget-header">
+            <h3>Match Events</h3>
+          </div>
+          <div className="divide-y divide-mg-border">
+            {events.map((event) => {
+              const isHome =
+                home && event.participant_id === home.id;
+              const icon = getEventIcon(
+                event.type?.developer_name || event.type?.name || ""
+              );
+              return (
+                <div
+                  key={event.id}
+                  className={`flex items-center gap-3 px-4 py-2.5 text-sm ${
+                    isHome ? "" : "flex-row-reverse text-right"
+                  }`}
+                >
+                  <span className="text-xs font-bold text-mg-accent w-8 shrink-0 text-center">
+                    {event.minute}&apos;
+                    {event.extra_minute ? `+${event.extra_minute}` : ""}
+                  </span>
+                  <span className="text-base">{icon}</span>
+                  <div className="min-w-0">
+                    <span className="text-sm font-medium text-white">
+                      {event.player_name || event.player?.display_name || ""}
+                    </span>
+                    {event.related_player_name && (
+                      <span className="text-xs text-mg-text-dim ml-2">
+                        ({event.related_player_name})
+                      </span>
+                    )}
+                    {event.result && (
+                      <span className="text-xs text-mg-text-dim ml-2">
+                        {event.result}
+                      </span>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* Statistics */}
+      {fixture.statistics && fixture.statistics.length > 0 && (
+        <div className="mg-widget mb-6">
+          <div className="mg-widget-header">
+            <h3>Statistics</h3>
+          </div>
+          <div className="p-4 space-y-3">
+            {(() => {
+              // Group stats by type
+              const statMap: Record<
+                string,
+                { name: string; home: number | string; away: number | string }
+              > = {};
+              for (const stat of fixture.statistics) {
+                const key = stat.type?.name || `stat-${stat.type_id}`;
+                if (!statMap[key]) {
+                  statMap[key] = { name: key, home: 0, away: 0 };
+                }
+                if (stat.location === "home") {
+                  statMap[key].home = stat.data.value;
+                } else {
+                  statMap[key].away = stat.data.value;
+                }
+              }
+              return Object.values(statMap).map((s) => (
+                <div key={s.name}>
+                  <div className="flex items-center justify-between text-xs text-mg-text-muted mb-1">
+                    <span className="font-medium text-white">{String(s.home)}</span>
+                    <span>{s.name}</span>
+                    <span className="font-medium text-white">{String(s.away)}</span>
+                  </div>
+                  <div className="flex gap-1 h-1.5">
+                    <div
+                      className="bg-mg-accent rounded-full"
+                      style={{
+                        width: `${
+                          (Number(s.home) /
+                            (Number(s.home) + Number(s.away) || 1)) *
+                          100
+                        }%`,
+                      }}
+                    />
+                    <div
+                      className="bg-mg-blue rounded-full"
+                      style={{
+                        width: `${
+                          (Number(s.away) /
+                            (Number(s.home) + Number(s.away) || 1)) *
+                          100
+                        }%`,
+                      }}
+                    />
+                  </div>
+                </div>
+              ));
+            })()}
+          </div>
+        </div>
+      )}
+
+      {/* Betting CTA */}
+      <div className="mg-cta">
+        <h3
+          className="text-lg font-bold text-white mb-1"
+          style={{ fontFamily: "Oswald, sans-serif" }}
+        >
+          WANT MORE MATCH INSIGHTS?
+        </h3>
+        <p className="text-sm text-mg-text-muted mb-3">
+          Follow Matchday Global for predictions, analysis, and the best odds on
+          every match.
+        </p>
+        <Link
+          href="/predictions"
+          className="inline-flex items-center gap-2 rounded-lg bg-gradient-to-r from-[#00ff88] to-[#4488ff] px-6 py-2.5 text-sm font-bold text-black transition-transform hover:scale-105"
+        >
+          View All Predictions →
+        </Link>
       </div>
     </div>
   );
