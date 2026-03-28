@@ -27,7 +27,7 @@ export const revalidate = 120;
 
 export default async function PredictionsPage() {
   const today = new Date();
-  const dates = [0, 1, 2].map((offset) => {
+  const dates = [-1, 0, 1, 2, 3, 4, 5, 6, 7].map((offset) => {
     const d = new Date(today);
     d.setDate(d.getDate() + offset);
     return d.toISOString().split("T")[0];
