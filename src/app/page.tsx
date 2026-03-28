@@ -17,7 +17,7 @@ import {
 } from "@/lib/content";
 import {
   getFixturesByDate,
-  getStandingsBySeason,
+  getStandingsByLeague,
   getHomeTeam,
   getAwayTeam,
   getMatchStatus,
@@ -25,20 +25,20 @@ import {
   LEAGUE_META,
 } from "@/lib/sportmonks";
 
-export const revalidate = 120;
+export const revalidate = 30;
 
 export default async function HomePage() {
   // Fetch live data (graceful fallback)
   const today = new Date().toISOString().split("T")[0];
   let todayFixtures: Awaited<ReturnType<typeof getFixturesByDate>> = [];
-  let plStandings: Awaited<ReturnType<typeof getStandingsBySeason>> = [];
+  let plStandings: Awaited<ReturnType<typeof getStandingsByLeague>> = [];
   try {
     todayFixtures = await getFixturesByDate(today);
   } catch {
     todayFixtures = [];
   }
   try {
-    plStandings = await getStandingsBySeason(LEAGUE_META[8].seasonId);
+    plStandings = await getStandingsByLeague(8);
   } catch {
     plStandings = [];
   }
@@ -287,7 +287,7 @@ export default async function HomePage() {
           {/* ==== PREDICTIONS CTA ==== */}
           <div className="mg-cta">
             <div className="text-lg font-bold text-white mb-1" style={{ fontFamily: "Oswald, sans-serif" }}>
-              MATCH PREDICTIONS
+              MATCH PREDCCTIONS
             </div>
             <p className="text-sm text-mg-text-muted mb-4">
               Test your football knowledge. Predict scores for upcoming matches.
