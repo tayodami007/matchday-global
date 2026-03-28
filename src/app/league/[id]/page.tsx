@@ -63,7 +63,7 @@ export default async function LeagueDetailPage({
     );
   }
 
-  let standings;
+  let standings: Awaited<ReturnType<typeof getStandingsBySeason>> = [];
   try {
     standings = await getStandingsBySeason(meta.seasonId);
   } catch {
