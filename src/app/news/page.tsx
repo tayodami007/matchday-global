@@ -7,19 +7,22 @@ import Image from "next/image";
 import Link from "next/link";
 import type { Metadata } from "next";
 import {
-  ARTICLES,
-  getLatestArticles,
+  ARTICLES as STATIC_ARTICLES,
+  getLatestArticles as getStaticLatest,
   formatRelativeTime,
   CATEGORY_COLORS,
   type Article,
   type ArticleCategory,
 } from "@/lib/content";
+import { fetchLiveNews } from "@/lib/news";
 
 export const metadata: Metadata = {
   title: "Football News — Latest Transfer Rumours, Match Reports & Analysis",
   description:
     "Breaking football news, transfer rumours, tactical analysis, and match reports from the Premier League, Champions League, La Liga, and beyond.",
 };
+
+export const revalidate = 300;
 
 const CATEGORIES: ArticleCategory[] = [
   "Breaking",
@@ -33,8 +36,17 @@ const CATEGORIES: ArticleCategory[] = [
   "Analysis",
 ];
 
-export default function NewsPage() {
-  const allArticles = getLatestArticles(50);
+export default async function NewsPage() {
+  // Fetch live news, fall back to static
+  let liveArticles: Article[] = [];
+  try {
+    liveArticles = await fetchLiveNews();
+  } catch {
+    liveArticles = [];
+  }
+  const allArticles = liveArticles.length >= 5
+    ? liveArticles
+    : getStaticLatest(50);
 
   return (
     <div className="mx-auto max-w-7xl px-4 sm:px-6 py-6">
