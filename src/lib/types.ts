@@ -195,6 +195,12 @@ export interface StandingDetail {
   standing_id: number;
   type_id: number;
   value: number;
+  type?: {
+    id: number;
+    name: string;
+    code: string;
+    developer_name: string;
+  };
   standing_type?: {
     id: number;
     name: string;
