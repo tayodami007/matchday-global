@@ -1,0 +1,30 @@
+<svg viewBox="0 0 400 400" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="mgGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#00FF88;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#4488FF;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+
+  <!-- MG Monogram: Fused letterforms -->
+  <!-- M: Left vertical + center peak + shared right vertical -->
+  <g>
+    <!-- M left vertical stroke -->
+    <rect x="60" y="100" width="35" height="220" rx="8" fill="url(#mgGradient)" />
+
+    <!-- M center peak (triangle-ish shape) -->
+    <polygon points="155,100 95,200 215,200" fill="url(#mgGradient)" />
+
+    <!-- M/G shared vertical (right leg of M = vertical of G) -->
+    <rect x="205" y="100" width="35" height="220" rx="8" fill="url(#mgGradient)" />
+
+    <!-- G horizontal top arm (extends right from shared vertical) -->
+    <rect x="240" y="100" width="110" height="35" rx="8" fill="url(#mgGradient)" />
+
+    <!-- G horizontal middle arm (the hook) -->
+    <rect x="240" y="185" width="110" height="35" rx="8" fill="url(#mgGradient)" />
+
+    <!-- G right vertical (closes the C-shape) -->
+    <rect x="315" y="185" width="35" height="135" rx="8" fill="url(#mgGradient)" />
+  </g>
+</svg>
