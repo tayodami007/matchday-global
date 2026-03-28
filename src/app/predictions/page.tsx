@@ -1,16 +1,31 @@
-import { getFixturesByDate, getHomeTeam, getAwayTeam, getMatchStatus, formatDate } from "@/lib/sportmonks";
-import type { Metadata } from "next";
+// ============================================================
+// MATCHDAYGLOBAL — PREDICTIONS PAGE
+// Match predictions with betting affiliate CTAs
+// ============================================================
+
 import Image from "next/image";
+import Link from "next/link";
+import type { Metadata } from "next";
+import {
+  getFixturesByDate,
+  getHomeTeam,
+  getAwayTeam,
+  getMatchStatus,
+  parseScores,
+  formatDate,
+  formatTime,
+  LEAGUE_META,
+} from "@/lib/sportmonks";
 
 export const metadata: Metadata = {
-  title: "Predictions — Predict Match Scores & Win",
-  description: "Test your football knowledge. Predict match scores, earn XP, climb the global leaderboard, and unlock exclusive badges on MatchdayGlobal.",
+  title: "Match Predictions — Predict Football Scores",
+  description:
+    "Predict match scores for Premier League, Champions League, La Liga, and more. Test your football knowledge with Matchday Global predictions.",
 };
 
-export const revalidate = 300;
+export const revalidate = 120;
 
 export default async function PredictionsPage() {
-  // Get upcoming fixtures for the next 3 days
   const today = new Date();
   const dates = [0, 1, 2].map((offset) => {
     const d = new Date(today);
@@ -18,190 +33,215 @@ export default async function PredictionsPage() {
     return d.toISOString().split("T")[0];
   });
 
-  const allFixtures = (
-    await Promise.all(dates.map((date) => getFixturesByDate(date)))
-  ).flat();
+  let allFixtures;
+  try {
+    allFixtures = (
+      await Promise.all(dates.map((date) => getFixturesByDate(date)))
+    ).flat();
+  } catch {
+    allFixtures = [];
+  }
 
-  const upcoming = allFixtures.filter((f) => {
-    const status = getMatchStatus(f);
-    return status.isUpcoming;
-  });
+  const majorLeagueIds = Object.keys(LEAGUE_META).map(Number);
+  const fixtures = allFixtures
+    .filter((f) => majorLeagueIds.includes(f.league_id))
+    .sort(
+      (a, b) =>
+        new Date(a.starting_at).getTime() - new Date(b.starting_at).getTime()
+    );
+
+  // Group by date
+  const grouped: Record<string, typeof fixtures> = {};
+  for (const f of fixtures) {
+    const date = f.starting_at.split("T")[0];
+    if (!grouped[date]) grouped[date] = [];
+    grouped[date].push(f);
+  }
 
   return (
-    <div>
-      {/* Hero */}
-      <section className="relative overflow-hidden border-b border-mg-border bg-mg-surface">
-        <div className="absolute inset-0 overflow-hidden">
-          <div className="absolute top-[10%] left-[30%] h-[60%] w-[40%] rounded-full bg-[#00ff88]/[0.04] blur-[100px]" />
-          <div className="absolute -right-[10%] top-[20%] h-[50%] w-[30%] rounded-full bg-[#8844ff]/[0.04] blur-[100px]" />
-        </div>
-        <div className="relative mx-auto max-w-4xl px-4 py-16 text-center sm:px-6 sm:py-24">
-          <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-mg-accent/20 bg-mg-accent/5 px-4 py-1.5 text-sm font-semibold text-mg-accent">
-            Free to Play
-          </div>
-          <h1 className="text-4xl font-black text-white sm:text-6xl">
-            Predict &amp; Win
-          </h1>
-          <p className="mx-auto mt-4 max-w-xl text-lg text-mg-text-muted">
-            Test your football knowledge. Predict match scores, earn XP, climb
-            the global leaderboard, and unlock exclusive badges.
-          </p>
-
-          {/* How it works */}
-          <div className="mt-12 grid gap-4 sm:grid-cols-3">
-            {[
-              {
-                step: "1",
-                title: "Predict",
-                desc: "Submit your score prediction before kickoff",
-              },
-              {
-                step: "2",
-                title: "Watch",
-                desc: "Follow the match live with the community",
-              },
-              {
-                step: "3",
-                title: "Win",
-                desc: "Earn XP for correct predictions, climb the leaderboard",
-              },
-            ].map((item) => (
-              <div
-                key={item.step}
-                className="mg-card flex flex-col items-center p-6 text-center"
-              >
-                <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br from-[#00ff88] to-[#4488ff] text-lg font-extrabold text-black">
-                  {item.step}
-                </div>
-                <h3 className="text-base font-bold text-white">{item.title}</h3>
-                <p className="mt-1 text-sm text-mg-text-muted">{item.desc}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Scoring System */}
-      <div className="mx-auto max-w-4xl px-4 py-8 sm:px-6">
-        <div className="mg-card mb-8 overflow-hidden">
-          <div className="border-b border-mg-border px-4 py-3">
-            <h2 className="text-sm font-bold text-white">Scoring System</h2>
-          </div>
-          <div className="grid grid-cols-3 divide-x divide-mg-border">
-            <div className="p-4 text-center">
-              <span className="text-3xl font-black mg-gradient-text">50</span>
-              <p className="mt-1 text-xs font-medium text-mg-text-muted">
-                Exact Score
-              </p>
-            </div>
-            <div className="p-4 text-center">
-              <span className="text-3xl font-black text-mg-blue">15</span>
-              <p className="mt-1 text-xs font-medium text-mg-text-muted">
-                Correct Result
-              </p>
-            </div>
-            <div className="p-4 text-center">
-              <span className="text-3xl font-black text-mg-text-muted">0</span>
-              <p className="mt-1 text-xs font-medium text-mg-text-muted">
-                Wrong
-              </p>
-            </div>
-          </div>
-        </div>
-
-        {/* Upcoming Matches */}
-        <h2 className="mb-4 text-xl font-extrabold text-white">
-          Upcoming Matches
-        </h2>
-
-        {upcoming.length === 0 ? (
-          <div className="mg-card flex flex-col items-center px-8 py-16 text-center">
-            <h3 className="text-lg font-bold text-white">
-              No upcoming matches to predict
-            </h3>
-            <p className="mt-2 text-sm text-mg-text-muted">
-              Check back when league fixtures resume.
-            </p>
-          </div>
-        ) : (
-          <div className="space-y-3">
-            {upcoming.slice(0, 20).map((fixture) => {
-              const home = getHomeTeam(fixture);
-              const away = getAwayTeam(fixture);
-              const status = getMatchStatus(fixture);
-
-              return (
-                <div key={fixture.id} className="mg-card overflow-hidden">
-                  <div className="flex items-center gap-4 p-4">
-                    <div className="flex min-w-0 flex-1 items-center gap-3">
-                      {home?.image_path && (
-                        <Image
-                          src={home.image_path}
-                          alt={home.name}
-                          width={32}
-                          height={32}
-                          className="h-8 w-8 shrink-0 object-contain"
-                        />
-                      )}
-                      <span className="truncate text-sm font-bold text-white">
-                        {home?.name || "Home"}
-                      </span>
-                    </div>
-
-                    {/* Prediction Inputs */}
-                    <div className="flex items-center gap-2">
-                      <input
-                        type="number"
-                        min="0"
-                        max="20"
-                        placeholder="-"
-                        className="h-10 w-12 rounded-lg border border-mg-border bg-mg-surface text-center text-lg font-bold text-white outline-none focus:border-mg-accent"
-                        disabled
-                      />
-                      <span className="text-sm font-light text-mg-text-muted">
-                        vs
-                      </span>
-                      <input
-                        type="number"
-                        min="0"
-                        max="20"
-                        placeholder="-"
-                        className="h-10 w-12 rounded-lg border border-mg-border bg-mg-surface text-center text-lg font-bold text-white outline-none focus:border-mg-accent"
-                        disabled
-                      />
-                    </div>
-
-                    <div className="flex min-w-0 flex-1 items-center justify-end gap-3">
-                      <span className="truncate text-right text-sm font-bold text-white">
-                        {away?.name || "Away"}
-                      </span>
-                      {away?.image_path && (
-                        <Image
-                          src={away.image_path}
-                          alt={away.name}
-                          width={32}
-                          height={32}
-                          className="h-8 w-8 shrink-0 object-contain"
-                        />
-                      )}
-                    </div>
-                  </div>
-
-                  <div className="flex items-center justify-between border-t border-mg-border bg-mg-surface px-4 py-2">
-                    <span className="text-xs text-mg-text-muted">
-                      {formatDate(fixture.starting_at)} &middot;{" "}
-                      {status.displayText}
-                    </span>
-                    <button className="rounded-lg bg-mg-accent/10 px-4 py-1 text-xs font-bold text-mg-accent transition-colors hover:bg-mg-accent/20">
-                      Sign up to predict
-                    </button>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        )}
+    <div className="mx-auto max-w-7xl px-4 sm:px-6 py-6">
+      {/* Header */}
+      <div className="mb-8">
+        <h1
+          className="text-3xl sm:text-4xl font-black text-white mb-2"
+          style={{ fontFamily: "Oswald, sans-serif" }}
+        >
+          MATCH PREDICTIONS
+        </h1>
+        <p className="text-sm text-mg-text-muted">
+          Upcoming fixtures from the top European leagues. Follow the action and
+          test your predictions.
+        </p>
       </div>
+
+      {/* Betting CTA banner */}
+      <div className="mg-cta mb-8 flex flex-col sm:flex-row items-center justify-between gap-4 text-left">
+        <div>
+          <h2
+            className="text-xl font-bold text-white mb-1"
+            style={{ fontFamily: "Oswald, sans-serif" }}
+          >
+            BACK YOUR PREDICTIONS
+          </h2>
+          <p className="text-sm text-mg-text-muted">
+            Think you know the score? Get the best odds on today&apos;s matches.
+          </p>
+        </div>
+        <span className="inline-flex items-center gap-2 rounded-lg bg-gradient-to-r from-[#00ff88] to-[#4488ff] px-6 py-3 text-sm font-bold text-black whitespace-nowrap">
+          Best Odds Available →
+        </span>
+      </div>
+
+      {/* Fixtures by date */}
+      {Object.keys(grouped).length === 0 ? (
+        <div className="mg-card flex flex-col items-center px-8 py-16 text-center">
+          <h3 className="text-lg font-bold text-white">
+            No upcoming matches found
+          </h3>
+          <p className="mt-2 text-sm text-mg-text-muted">
+            Check back when league fixtures resume.
+          </p>
+        </div>
+      ) : (
+        <div className="space-y-8">
+          {Object.entries(grouped).map(([date, dateFixtures]) => (
+            <div key={date}>
+              {/* Date header */}
+              <div className="mg-section-header">
+                <div className="bar bg-mg-accent" />
+                <h2>
+                  {new Date(date).toLocaleDateString("en-GB", {
+                    weekday: "long",
+                    day: "numeric",
+                    month: "long",
+                  })}
+                </h2>
+              </div>
+
+              {/* Match cards */}
+              <div className="space-y-3">
+                {dateFixtures.map((fixture) => {
+                  const home = getHomeTeam(fixture);
+                  const away = getAwayTeam(fixture);
+                  const status = getMatchStatus(fixture);
+                  const scores = parseScores(fixture);
+
+                  return (
+                    <Link
+                      key={fixture.id}
+                      href={`/match/${fixture.id}`}
+                      className="mg-card-link block"
+                    >
+                      <div className="flex items-center gap-4 p-4">
+                        {/* Home team */}
+                        <div className="flex min-w-0 flex-1 items-center gap-3">
+                          {home?.image_path && (
+                            <Image
+                              src={home.image_path}
+                              alt={home.name}
+                              width={32}
+                              height={32}
+                              className="h-8 w-8 shrink-0 object-contain"
+                            />
+                          )}
+                          <span className="truncate text-sm font-bold text-white">
+                            {home?.name || "Home"}
+                          </span>
+                        </div>
+
+                        {/* Score / Time */}
+                        <div className="flex items-center gap-3 shrink-0">
+                          {status.isFinished || status.isLive ? (
+                            <>
+                              <span
+                                className={`text-xl font-black ${
+                                  status.isLive
+                                    ? "text-mg-accent"
+                                    : "text-white"
+                                }`}
+                              >
+                                {scores.home}
+                              </span>
+                              <span className="text-xs text-mg-text-dim">
+                                -
+                              </span>
+                              <span
+                                className={`text-xl font-black ${
+                                  status.isLive
+                                    ? "text-mg-accent"
+                                    : "text-white"
+                                }`}
+                              >
+                                {scores.away}
+                              </span>
+                            </>
+                          ) : (
+                            <span className="text-base font-bold text-mg-text-muted">
+                              {formatTime(fixture.starting_at)}
+                            </span>
+                          )}
+                        </div>
+
+                        {/* Away team */}
+                        <div className="flex min-w-0 flex-1 items-center justify-end gap-3">
+                          <span className="truncate text-right text-sm font-bold text-white">
+                            {away?.name || "Away"}
+                          </span>
+                          {away?.image_path && (
+                            <Image
+                              src={away.image_path}
+                              alt={away.name}
+                              width={32}
+                              height={32}
+                              className="h-8 w-8 shrink-0 object-contain"
+                            />
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Bottom bar */}
+                      <div className="flex items-center justify-between border-t border-mg-border bg-mg-surface px-4 py-2">
+                        <div className="flex items-center gap-2">
+                          {fixture.league?.image_path && (
+                            <Image
+                              src={fixture.league.image_path}
+                              alt={fixture.league?.name || "League"}
+                              width={16}
+                              height={16}
+                              className="h-4 w-4 object-contain"
+                            />
+                          )}
+                          <span className="text-xs text-mg-text-muted">
+                            {fixture.league?.name || "League"}
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          {status.isLive && (
+                            <span className="mg-badge bg-mg-red/20 text-mg-red text-[10px]">
+                              <span className="h-1 w-1 rounded-full bg-mg-red mg-live-pulse" />
+                              LIVE {status.displayText}
+                            </span>
+                          )}
+                          {status.isFinished && (
+                            <span className="text-[10px] font-bold text-mg-text-dim">
+                              FT
+                            </span>
+                          )}
+                          {status.isUpcoming && (
+                            <span className="text-[10px] text-mg-text-dim">
+                              {formatDate(fixture.starting_at)}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    </Link>
+                  );
+                })}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
