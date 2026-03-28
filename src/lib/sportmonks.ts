@@ -112,10 +112,22 @@ export async function getStandingsBySeason(
   try {
     const res = await fetchApi<Standing[]>(
       `/standings/seasons/${seasonId}`,
-      { include: "participant" },
+      { include: "participant;details" },
       300
     );
     return res.data || [];
+  } catch {
+    return [];
+  }
+}
+
+export async function getStandingsByLeague(
+  leagueId: number
+): Promise<Standing[]> {
+  try {
+    const seasonId = await getCurrentSeasonByLeague(leagueId);
+    if (!seasonId) return [];
+    return getStandingsBySeason(seasonId);
   } catch {
     return [];
   }
