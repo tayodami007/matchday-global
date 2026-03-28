@@ -1,610 +1,400 @@
+// ============================================================
+// MATCHDAYGLOBAL — HOMEPAGE
+// Football media platform: hero, news grid, sidebar, transfers
+// ============================================================
+
+import Image from "next/image";
+import Link from "next/link";
 import {
-  getLeagues,
+  ARTICLES,
+  getFeaturedArticle,
+  getLatestArticles,
+  getTransferArticles,
+  getTrendingArticles,
+  formatRelativeTime,
+  CATEGORY_COLORS,
+  type Article,
+} from "@/lib/content";
+import {
   getFixturesByDate,
-  getLiveScores,
   getStandingsBySeason,
-  parseScores,
-  getMatchStatus,
   getHomeTeam,
   getAwayTeam,
+  getMatchStatus,
+  parseScores,
   LEAGUE_META,
 } from "@/lib/sportmonks";
-import type { Fixture, League, Standing } from "@/lib/types";
-import Image from "next/image";
 
-// Revalidate every 60 seconds
-export const revalidate = 60;
+export const revalidate = 120;
 
 export default async function HomePage() {
+  // Fetch live data (graceful fallback)
   const today = new Date().toISOString().split("T")[0];
+  let todayFixtures;
+  let plStandings;
+  try {
+    todayFixtures = await getFixturesByDate(today);
+  } catch {
+    todayFixtures = [];
+  }
+  try {
+    plStandings = await getStandingsBySeason(LEAGUE_META[8].seasonId);
+  } catch {
+    plStandings = [];
+  }
 
-  // Fetch data in parallel
-  const [leagues, todayFixtures, liveFixtures, plStandings] = await Promise.all(
-    [
-      getLeagues(),
-      getFixturesByDate(today),
-      getLiveScores(),
-      getStandingsBySeason(23614), // Premier League 2025/26
-    ]
-  );
+  const featured = getFeaturedArticle();
+  const latest = getLatestArticles(12).filter((a) => !a.featured);
+  const transfers = getTransferArticles();
+  const trending = getTrendingArticles();
 
-  // Merge live fixtures with today's fixtures (live ones replace static ones)
-  const liveIds = new Set(liveFixtures.map((f) => f.id));
-  const mergedFixtures = [
-    ...liveFixtures,
-    ...todayFixtures.filter((f) => !liveIds.has(f.id)),
-  ].sort(
-    (a, b) =>
-      new Date(a.starting_at).getTime() - new Date(b.starting_at).getTime()
-  );
+  // Sort standings
+  const sortedStandings = [...(plStandings || [])]
+    .sort((a, b) => (a.position ?? 99) - (b.position ?? 99))
+    .slice(0, 10);
 
-  // Group fixtures by league
-  const fixturesByLeague = mergedFixtures.reduce(
-    (acc, fixture) => {
-      const leagueId = fixture.league_id;
-      if (!acc[leagueId]) acc[leagueId] = [];
-      acc[leagueId].push(fixture);
-      return acc;
-    },
-    {} as Record<number, Fixture[]>
-  );
+  // Filter fixtures to major leagues
+  const majorLeagueIds = Object.keys(LEAGUE_META).map(Number);
+  const liveAndRecent = (todayFixtures || [])
+    .filter((f) => majorLeagueIds.includes(f.league_id))
+    .slice(0, 8);
 
   return (
-    <div>
-      {/* Hero Section */}
-      <HeroSection
-        liveCount={liveFixtures.length}
-        totalToday={mergedFixtures.length}
-      />
+    <div className="mx-auto max-w-7xl px-4 sm:px-6 py-6">
+      {/* ============ MAIN GRID: Content + Sidebar ============ */}
+      <div className="grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-6">
+        {/* ---- LEFT COLUMN ---- */}
+        <div className="min-w-0 space-y-10">
+          {/* ==== HERO STORY ==== */}
+          {featured && (
+            <Link href={`/news#${featured.id}`} className="block">
+              <div className="mg-hero relative">
+                <Image
+                  src={featured.image}
+                  alt={featured.imageAlt}
+                  fill
+                  className="mg-hero-img object-cover"
+                  sizes="(max-width: 1024px) 100vw, 65vw"
+                  priority
+                />
+                <div className="mg-hero-overlay absolute inset-0 z-10" />
+                <div className="absolute bottom-0 left-0 right-0 z-20 p-6 sm:p-8">
+                  <div className="flex items-center gap-2 mb-3">
+                    {featured.breaking && (
+                      <span className="mg-badge bg-mg-red text-white">
+                        <span className="h-1.5 w-1.5 rounded-full bg-white mg-live-pulse" />
+                        Breaking
+                      </span>
+                    )}
+                    <span
+                      className="mg-badge text-white"
+                      style={{ backgroundColor: CATEGORY_COLORS[featured.category] }}
+                    >
+                      {featured.category}
+                    </span>
+                    {featured.tag && (
+                      <span className="mg-badge bg-mg-gold/20 text-mg-gold">
+                        {featured.tag}
+                      </span>
+                    )}
+                  </div>
+                  <h1
+                    className="text-2xl sm:text-4xl lg:text-5xl font-black text-white leading-tight mb-3"
+                    style={{ fontFamily: "Oswald, sans-serif" }}
+                  >
+                    {featured.title}
+                  </h1>
+                  <p className="text-sm sm:text-base text-mg-text-secondary line-clamp-2 max-w-2xl mb-4">
+                    {featured.excerpt}
+                  </p>
+                  <div className="flex items-center gap-3 text-xs text-mg-text-muted">
+                    <span className="font-semibold text-mg-accent">{featured.author}</span>
+                    <span>•</span>
+                    <span>{formatRelativeTime(featured.publishedAt)}</span>
+                    <span>•</span>
+                    <span>{featured.readTime} min read</span>
+                  </div>
+                </div>
+              </div>
+            </Link>
+          )}
 
-      {/* Live Scores Ticker */}
-      {liveFixtures.length > 0 && <LiveTicker fixtures={liveFixtures} />}
+          {/* ==== TRENDING ==== */}
+          {trending.length > 0 && (
+            <div>
+              <div className="mg-section-header">
+                <div className="bar bg-mg-accent" />
+                <h2>Trending Now</h2>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                {trending.slice(0, 3).map((article) => (
+                  <ArticleCard key={article.id} article={article} size="sm" />
+                ))}
+              </div>
+            </div>
+          )}
 
-      <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6">
-        <div className="grid gap-8 lg:grid-cols-3">
-          {/* Main Content — Fixtures */}
-          <div className="lg:col-span-2">
-            <SectionHeader
-              title="Today's Matches"
-              subtitle={today}
-              count={mergedFixtures.length}
-            />
+          {/* ==== LATEST NEWS ==== */}
+          <div>
+            <div className="mg-section-header">
+              <div className="bar bg-mg-blue" />
+              <h2>Latest News</h2>
+              <Link href="/news">View All →</Link>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              {latest.slice(0, 6).map((article) => (
+                <ArticleCard key={article.id} article={article} />
+              ))}
+            </div>
+          </div>
 
-            {mergedFixtures.length === 0 ? (
-              <NoMatchesCard />
+          {/* ==== TRANSFER RUMOURS ==== */}
+          {transfers.length > 0 && (
+            <div>
+              <div className="mg-section-header">
+                <div className="bar bg-mg-gold" />
+                <h2>Transfer Rumours</h2>
+                <Link href="/news?cat=Transfers">View All →</Link>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                {transfers.slice(0, 4).map((article) => (
+                  <ArticleCard key={article.id} article={article} />
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* ==== MORE STORIES ==== */}
+          <div>
+            <div className="mg-section-header">
+              <div className="bar bg-mg-purple" />
+              <h2>More Stories</h2>
+            </div>
+            <div className="space-y-3">
+              {latest.slice(6, 12).map((article) => (
+                <ArticleRowCard key={article.id} article={article} />
+              ))}
+            </div>
+          </div>
+        </div>
+
+        {/* ---- RIGHT COLUMN: Sidebar ---- */}
+        <aside className="space-y-5">
+          {/* ==== LIVE SCORES ==== */}
+          <div className="mg-widget">
+            <div className="mg-widget-header">
+              <div className="flex items-center gap-2">
+                <span className="h-2 w-2 rounded-full bg-mg-red mg-live-pulse" />
+                <h3>Scores</h3>
+              </div>
+              <Link href="/predictions" className="text-xs text-mg-accent font-semibold hover:opacity-80 transition-opacity">
+                All Scores →
+              </Link>
+            </div>
+            {liveAndRecent.length === 0 ? (
+              <div className="px-4 py-8 text-center">
+                <p className="text-sm text-mg-text-muted">No matches today</p>
+                <p className="text-xs text-mg-text-dim mt-1">Check back when fixtures resume</p>
+              </div>
             ) : (
-              <div className="space-y-6">
-                {Object.entries(fixturesByLeague).map(
-                  ([leagueId, fixtures]) => (
-                    <LeagueFixtureGroup
-                      key={leagueId}
-                      leagueId={Number(leagueId)}
-                      fixtures={fixtures}
-                      leagues={leagues}
-                    />
-                  )
-                )}
+              <div>
+                {liveAndRecent.map((fixture) => {
+                  const home = getHomeTeam(fixture);
+                  const away = getAwayTeam(fixture);
+                  const status = getMatchStatus(fixture);
+                  const scores = parseScores(fixture);
+                  return (
+                    <Link key={fixture.id} href={`/match/${fixture.id}`} className="mg-score-row">
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center justify-between gap-2">
+                          <span className="text-xs font-medium text-white truncate">{home?.name || "Home"}</span>
+                          <span className={`text-xs font-bold ${status.isLive ? "text-mg-accent" : "text-white"}`}>
+                            {status.isFinished || status.isLive ? scores.home : ""}
+                          </span>
+                        </div>
+                        <div className="flex items-center justify-between gap-2 mt-0.5">
+                          <span className="text-xs font-medium text-white truncate">{away?.name || "Away"}</span>
+                          <span className={`text-xs font-bold ${status.isLive ? "text-mg-accent" : "text-white"}`}>
+                            {status.isFinished || status.isLive ? scores.away : ""}
+                          </span>
+                        </div>
+                      </div>
+                      <div className="ml-3 shrink-0">
+                        {status.isLive ? (
+                          <span className="mg-badge bg-mg-red/20 text-mg-red text-[10px]">
+                            <span className="h-1 w-1 rounded-full bg-mg-red mg-live-pulse" />
+                            {status.displayText}
+                          </span>
+                        ) : status.isFinished ? (
+                          <span className="text-[10px] font-bold text-mg-text-dim">FT</span>
+                        ) : (
+                          <span className="text-[10px] font-medium text-mg-text-muted">{status.displayText}</span>
+                        )}
+                      </div>
+                    </Link>
+                  );
+                })}
               </div>
             )}
           </div>
 
-          {/* Sidebar — Standings + Leagues */}
-          <aside className="space-y-6">
-            {/* Premier League Standings */}
-            <StandingsWidget standings={plStandings} />
-
-            {/* Browse Leagues */}
-            <LeaguesWidget leagues={leagues} />
-
-            {/* Predictions CTA */}
-            <PredictionsCTA />
-          </aside>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-// ============================================================
-// HERO SECTION
-// ============================================================
-function HeroSection({
-  liveCount,
-  totalToday,
-}: {
-  liveCount: number;
-  totalToday: number;
-}) {
-  return (
-    <section className="relative overflow-hidden border-b border-mg-border bg-mg-surface">
-      {/* Background gradient orbs */}
-      <div className="absolute inset-0 overflow-hidden">
-        <div className="absolute -top-[40%] -left-[20%] h-[80%] w-[60%] rounded-full bg-[#00ff88]/[0.03] blur-[100px]" />
-        <div className="absolute -right-[20%] -bottom-[40%] h-[80%] w-[60%] rounded-full bg-[#4488ff]/[0.03] blur-[100px]" />
-      </div>
-
-      <div className="relative mx-auto max-w-7xl px-4 py-16 sm:px-6 sm:py-24">
-        <div className="flex flex-col items-center text-center">
-          {/* Live badge */}
-          {liveCount > 0 && (
-            <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-mg-red/30 bg-mg-red/10 px-4 py-1.5 text-sm font-semibold text-mg-red">
-              <span className="relative flex h-2 w-2">
-                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-mg-red opacity-75" />
-                <span className="relative inline-flex h-2 w-2 rounded-full bg-mg-red" />
-              </span>
-              {liveCount} {liveCount === 1 ? "Match" : "Matches"} Live Now
+          {/* ==== PREMIER LEAGUE TABLE ==== */}
+          <div className="mg-widget">
+            <div className="mg-widget-header">
+              <h3 className="text-mg-purple">Premier League</h3>
+              <Link href="/league/8" className="text-xs text-mg-accent font-semibold hover:opacity-80 transition-opacity">
+                Full Table →
+              </Link>
             </div>
-          )}
-
-          <h1 className="text-4xl font-black tracking-tight sm:text-6xl lg:text-7xl">
-            <span className="text-white">The World&apos;s</span>
-            <br />
-            <span className="mg-gradient-text">Football Operating System</span>
-          </h1>
-
-          <p className="mt-6 max-w-2xl text-lg text-mg-text-muted sm:text-xl">
-            Live scores, real-time stats, predictions, and the most passionate
-            football community on Earth. Covering every match across{" "}
-            <span className="text-white font-semibold">7 top leagues</span>.
-          </p>
-
-          {/* Stats bar */}
-          <div className="mt-10 flex flex-wrap items-center justify-center gap-6 sm:gap-10">
-            <StatPill
-              value={totalToday > 0 ? totalToday.toString() : "--"}
-              label="Matches Today"
-            />
-            <StatPill value="7" label="Top Leagues" />
-            <StatPill value="AI" label="Powered Analysis" />
-            <StatPill value="Free" label="Forever" />
+            <div className="mg-standings-row text-[10px] font-bold text-mg-text-dim uppercase tracking-wider">
+              <span>#</span>
+              <span>Team</span>
+              <span className="text-center">P</span>
+              <span className="text-center">W</span>
+              <span className="text-center">D</span>
+              <span className="text-center">L</span>
+              <span className="text-center">Pts</span>
+            </div>
+            {sortedStandings.length === 0 ? (
+              <div className="px-4 py-6 text-center text-xs text-mg-text-muted">Loading standings...</div>
+            ) : (
+              sortedStandings.map((entry) => (
+                <div key={entry.participant_id} className="mg-standings-row">
+                  <span className={`text-xs font-bold ${(entry.position ?? 0) <= 4 ? "text-mg-blue" : (entry.position ?? 0) >= 18 ? "text-mg-red" : "text-mg-text-muted"}`}>
+                    {entry.position}
+                  </span>
+                  <span className="text-xs font-medium text-white truncate">
+                    {entry.participant?.name || `Team ${entry.participant_id}`}
+                  </span>
+                  <span className="text-xs text-mg-text-muted text-center">
+                    {entry.details?.find((d) => d.type_id === 129)?.value ?? "-"}
+                  </span>
+                  <span className="text-xs text-mg-text-muted text-center">
+                    {entry.details?.find((d) => d.type_id === 130)?.value ?? "-"}
+                  </span>
+                  <span className="text-xs text-mg-text-muted text-center">
+                    {entry.details?.find((d) => d.type_id === 131)?.value ?? "-"}
+                  </span>
+                  <span className="text-xs text-mg-text-muted text-center">
+                    {entry.details?.find((d) => d.type_id === 132)?.value ?? "-"}
+                  </span>
+                  <span className="text-xs font-bold text-white text-center">{entry.points ?? "-"}</span>
+                </div>
+              ))
+            )}
           </div>
 
-          {/* CTA */}
-          <div className="mt-10 flex flex-wrap items-center justify-center gap-4">
-            <a
+          {/* ==== PREDICTIONS CTA ==== */}
+          <div className="mg-cta">
+            <div className="text-lg font-bold text-white mb-1" style={{ fontFamily: "Oswald, sans-serif" }}>
+              MATCH PREDICTIONS
+            </div>
+            <p className="text-sm text-mg-text-muted mb-4">
+              Test your football knowledge. Predict scores for upcoming matches.
+            </p>
+            <Link
               href="/predictions"
-              className="rounded-full bg-gradient-to-r from-[#00ff88] to-[#4488ff] px-8 py-3.5 text-base font-bold text-black shadow-lg shadow-[#00ff88]/20 transition-all hover:shadow-xl hover:shadow-[#00ff88]/30"
+              className="inline-flex items-center gap-2 rounded-lg bg-gradient-to-r from-[#00ff88] to-[#4488ff] px-6 py-2.5 text-sm font-bold text-black transition-transform hover:scale-105"
             >
-              Start Predicting — It&apos;s Free
-            </a>
-            <a
-              href="#todays-matches"
-              className="rounded-full border border-mg-border bg-mg-card px-8 py-3.5 text-base font-semibold text-mg-text transition-all hover:border-mg-accent hover:text-mg-accent"
-            >
-              View Live Scores
-            </a>
+              Make Predictions →
+            </Link>
           </div>
-        </div>
-      </div>
-    </section>
-  );
-}
 
-function StatPill({ value, label }: { value: string; label: string }) {
-  return (
-    <div className="flex flex-col items-center">
-      <span className="text-2xl font-extrabold text-white sm:text-3xl">
-        {value}
-      </span>
-      <span className="text-xs font-medium uppercase tracking-wider text-mg-text-muted">
-        {label}
-      </span>
-    </div>
-  );
-}
-
-// ============================================================
-// LIVE TICKER
-// ============================================================
-function LiveTicker({ fixtures }: { fixtures: Fixture[] }) {
-  return (
-    <div className="overflow-hidden border-b border-mg-border bg-mg-live/5">
-      <div className="flex items-center">
-        <div className="flex shrink-0 items-center gap-2 border-r border-mg-border bg-mg-red/10 px-4 py-2.5">
-          <span className="relative flex h-2 w-2">
-            <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-mg-red opacity-75" />
-            <span className="relative inline-flex h-2 w-2 rounded-full bg-mg-red" />
-          </span>
-          <span className="text-xs font-bold uppercase tracking-wider text-mg-red">
-            Live
-          </span>
-        </div>
-        <div className="mg-ticker flex items-center gap-6 whitespace-nowrap px-4 py-2.5">
-          {[...fixtures, ...fixtures].map((fixture, i) => {
-            const home = getHomeTeam(fixture);
-            const away = getAwayTeam(fixture);
-            const scores = parseScores(fixture);
-            const status = getMatchStatus(fixture);
-            return (
-              <a
-                key={`${fixture.id}-${i}`}
-                href={`/match/${fixture.id}`}
-                className="inline-flex items-center gap-3 text-sm"
-              >
-                <span className="font-medium text-white">
-                  {home?.short_code || "???"}
-                </span>
-                <span className="rounded bg-mg-card px-2 py-0.5 font-mono font-bold text-white">
-                  {scores.home} - {scores.away}
-                </span>
-                <span className="font-medium text-white">
-                  {away?.short_code || "???"}
-                </span>
-                <span className="text-xs font-semibold text-mg-red">
-                  {status.displayText}
-                </span>
-                <span className="text-mg-border">|</span>
-              </a>
-            );
-          })}
-        </div>
-      </div>
-    </div>
-  );
-}
-
-// ============================================================
-// SECTION HEADER
-// ============================================================
-function SectionHeader({
-  title,
-  subtitle,
-  count,
-}: {
-  title: string;
-  subtitle: string;
-  count: number;
-}) {
-  return (
-    <div id="todays-matches" className="mb-6 flex items-end justify-between">
-      <div>
-        <h2 className="text-2xl font-extrabold text-white">{title}</h2>
-        <p className="mt-1 text-sm text-mg-text-muted">
-          {subtitle} &middot; {count} {count === 1 ? "match" : "matches"}
-        </p>
-      </div>
-      <div className="flex items-center gap-2">
-        <button className="rounded-lg border border-mg-border bg-mg-card px-3 py-1.5 text-xs font-medium text-mg-text-muted hover:text-white">
-          Yesterday
-        </button>
-        <button className="rounded-lg border border-mg-accent/30 bg-mg-accent/10 px-3 py-1.5 text-xs font-semibold text-mg-accent">
-          Today
-        </button>
-        <button className="rounded-lg border border-mg-border bg-mg-card px-3 py-1.5 text-xs font-medium text-mg-text-muted hover:text-white">
-          Tomorrow
-        </button>
-      </div>
-    </div>
-  );
-}
-
-// ============================================================
-// LEAGUE FIXTURE GROUP
-// ============================================================
-function LeagueFixtureGroup({
-  leagueId,
-  fixtures,
-  leagues,
-}: {
-  leagueId: number;
-  fixtures: Fixture[];
-  leagues: League[];
-}) {
-  const league =
-    fixtures[0]?.league || leagues.find((l) => l.id === leagueId);
-  const meta = LEAGUE_META[leagueId];
-
-  return (
-    <div className="mg-card overflow-hidden">
-      {/* League Header */}
-      <a
-        href={`/league/${leagueId}`}
-        className="flex items-center gap-3 border-b border-mg-border px-4 py-3 transition-colors hover:bg-mg-card-hover"
-      >
-        {league?.image_path && (
-          <Image
-            src={league.image_path}
-            alt={league?.name || "League"}
-            width={24}
-            height={24}
-            className="h-6 w-6 object-contain"
-          />
-        )}
-        <span className="text-sm font-bold text-white">
-          {league?.name || "Unknown League"}
-        </span>
-        {league?.country && (
-          <span className="text-xs text-mg-text-muted">
-            {league.country.name}
-          </span>
-        )}
-        <svg
-          className="ml-auto h-4 w-4 text-mg-text-muted"
-          fill="none"
-          viewBox="0 0 24 24"
-          stroke="currentColor"
-          strokeWidth={2}
-        >
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            d="M9 5l7 7-7 7"
-          />
-        </svg>
-      </a>
-
-      {/* Fixtures */}
-      <div className="divide-y divide-mg-border">
-        {fixtures.map((fixture) => (
-          <FixtureRow key={fixture.id} fixture={fixture} />
-        ))}
-      </div>
-    </div>
-  );
-}
-
-// ============================================================
-// FIXTURE ROW
-// ============================================================
-function FixtureRow({ fixture }: { fixture: Fixture }) {
-  const home = getHomeTeam(fixture);
-  const away = getAwayTeam(fixture);
-  const scores = parseScores(fixture);
-  const status = getMatchStatus(fixture);
-
-  return (
-    <a
-      href={`/match/${fixture.id}`}
-      className="flex items-center gap-3 px-4 py-3 transition-colors hover:bg-mg-card-hover"
-    >
-      {/* Status */}
-      <div className="w-12 shrink-0 text-center">
-        {status.isLive ? (
-          <span className="inline-flex items-center gap-1 text-xs font-bold text-mg-red">
-            <span className="relative flex h-1.5 w-1.5">
-              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-mg-red opacity-75" />
-              <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-mg-red" />
-            </span>
-            {status.displayText}
-          </span>
-        ) : status.isFinished ? (
-          <span className="text-xs font-semibold text-mg-text-muted">FT</span>
-        ) : (
-          <span className="text-xs font-medium text-mg-text-muted">
-            {status.displayText}
-          </span>
-        )}
-      </div>
-
-      {/* Teams */}
-      <div className="flex min-w-0 flex-1 flex-col gap-1.5">
-        {/* Home Team */}
-        <div className="flex items-center gap-2">
-          {home?.image_path && (
-            <Image
-              src={home.image_path}
-              alt={home.name}
-              width={20}
-              height={20}
-              className="h-5 w-5 object-contain"
-            />
-          )}
-          <span
-            className={`truncate text-sm font-semibold ${home?.meta?.winner ? "text-white" : "text-mg-text"}`}
-          >
-            {home?.name || "TBD"}
-          </span>
-        </div>
-        {/* Away Team */}
-        <div className="flex items-center gap-2">
-          {away?.image_path && (
-            <Image
-              src={away.image_path}
-              alt={away.name}
-              width={20}
-              height={20}
-              className="h-5 w-5 object-contain"
-            />
-          )}
-          <span
-            className={`truncate text-sm font-semibold ${away?.meta?.winner ? "text-white" : "text-mg-text"}`}
-          >
-            {away?.name || "TBD"}
-          </span>
-        </div>
-      </div>
-
-      {/* Scores */}
-      {(status.isLive || status.isFinished || status.isHalfTime) && (
-        <div className="flex flex-col items-center gap-1.5">
-          <span
-            className={`w-7 rounded text-center font-mono text-sm font-bold ${status.isLive ? "text-white" : "text-mg-text"}`}
-          >
-            {scores.home}
-          </span>
-          <span
-            className={`w-7 rounded text-center font-mono text-sm font-bold ${status.isLive ? "text-white" : "text-mg-text"}`}
-          >
-            {scores.away}
-          </span>
-        </div>
-      )}
-
-      {/* Predict button */}
-      {status.isUpcoming && (
-        <button
-          className="shrink-0 rounded-lg border border-mg-accent/20 bg-mg-accent/5 px-3 py-1.5 text-xs font-bold text-mg-accent transition-all hover:bg-mg-accent/10"
-          onClick={(e) => e.preventDefault()}
-        >
-          Predict
-        </button>
-      )}
-    </a>
-  );
-}
-
-// ============================================================
-// NO MATCHES CARD
-// ============================================================
-function NoMatchesCard() {
-  return (
-    <div className="mg-card flex flex-col items-center justify-center px-8 py-16 text-center">
-      <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-mg-surface">
-        <svg
-          className="h-8 w-8 text-mg-text-muted"
-          fill="none"
-          viewBox="0 0 24 24"
-          stroke="currentColor"
-          strokeWidth={1.5}
-        >
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5"
-          />
-        </svg>
-      </div>
-      <h3 className="text-lg font-bold text-white">No Matches Today</h3>
-      <p className="mt-2 max-w-sm text-sm text-mg-text-muted">
-        There are no scheduled matches for today. Check back tomorrow or browse
-        the latest league standings below.
-      </p>
-    </div>
-  );
-}
-
-// ============================================================
-// STANDINGS WIDGET (Sidebar)
-// ============================================================
-function StandingsWidget({ standings }: { standings: Standing[] }) {
-  const sorted = [...standings].sort((a, b) => a.position - b.position);
-  const top10 = sorted.slice(0, 10);
-
-  return (
-    <div className="mg-card overflow-hidden">
-      <div className="flex items-center justify-between border-b border-mg-border px-4 py-3">
-        <h3 className="text-sm font-bold text-white">Premier League</h3>
-        <a
-          href="/league/8"
-          className="text-xs font-medium text-mg-accent hover:underline"
-        >
-          Full Table
-        </a>
-      </div>
-      <div className="divide-y divide-mg-border">
-        {top10.map((entry) => (
-          <div
-            key={entry.id}
-            className="flex items-center gap-2.5 px-4 py-2.5"
-          >
-            <span
-              className={`w-5 text-center text-xs font-bold ${
-                entry.position <= 4
-                  ? "text-mg-blue"
-                  : entry.position >= 18
-                    ? "text-mg-red"
-                    : "text-mg-text-muted"
-              }`}
-            >
-              {entry.position}
-            </span>
-            {entry.participant?.image_path && (
-              <Image
-                src={entry.participant.image_path}
-                alt={entry.participant.name}
-                width={20}
-                height={20}
-                className="h-5 w-5 object-contain"
-              />
-            )}
-            <span className="min-w-0 flex-1 truncate text-sm font-medium text-mg-text">
-              {entry.participant?.name || "Unknown"}
-            </span>
-            <span className="text-sm font-bold text-white">
-              {entry.points}
-            </span>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-}
-
-// ============================================================
-// LEAGUES WIDGET (Sidebar)
-// ============================================================
-function LeaguesWidget({ leagues }: { leagues: League[] }) {
-  return (
-    <div className="mg-card overflow-hidden">
-      <div className="border-b border-mg-border px-4 py-3">
-        <h3 className="text-sm font-bold text-white">Leagues</h3>
-      </div>
-      <div className="divide-y divide-mg-border">
-        {leagues.map((league) => (
-          <a
-            key={league.id}
-            href={`/league/${league.id}`}
-            className="flex items-center gap-3 px-4 py-3 transition-colors hover:bg-mg-card-hover"
-          >
-            {league.image_path && (
-              <Image
-                src={league.image_path}
-                alt={league.name}
-                width={24}
-                height={24}
-                className="h-6 w-6 object-contain"
-              />
-            )}
-            <div className="min-w-0 flex-1">
-              <p className="truncate text-sm font-semibold text-mg-text">
-                {league.name}
-              </p>
-              <p className="text-xs text-mg-text-muted">
-                {league.country?.name}
-              </p>
+          {/* ==== POPULAR ==== */}
+          <div className="mg-widget">
+            <div className="mg-widget-header">
+              <h3>Popular</h3>
             </div>
-            <svg
-              className="h-4 w-4 shrink-0 text-mg-text-muted"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-              strokeWidth={2}
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                d="M9 5l7 7-7 7"
+            <div className="divide-y divide-mg-border">
+              {ARTICLES.slice(0, 5).map((article, i) => (
+                <Link key={article.id} href={`/news#${article.id}`} className="flex items-start gap-3 px-4 py-3 hover:bg-mg-surface-2 transition-colors">
+                  <span className="text-2xl font-black text-mg-border-light leading-none mt-0.5" style={{ fontFamily: "Oswald, sans-serif" }}>
+                    {String(i + 1).padStart(2, "0")}
+                  </span>
+                  <div className="min-w-0">
+                    <p className="text-xs font-semibold text-white line-clamp-2 leading-snug">{article.title}</p>
+                    <span className="text-[10px] text-mg-text-dim mt-1 block">{formatRelativeTime(article.publishedAt)}</span>
+                  </div>
+                </Link>
+              ))}
+            </div>
+          </div>
+
+          {/* ==== NEWSLETTER ==== */}
+          <div className="mg-card p-5">
+            <h3 className="text-base font-bold text-white mb-1" style={{ fontFamily: "Oswald, sans-serif" }}>
+              NEVER MISS A STORY
+            </h3>
+            <p className="text-xs text-mg-text-muted mb-3">
+              Get breaking news and transfer rumours straight to your inbox.
+            </p>
+            <div className="flex gap-2">
+              <input
+                type="email"
+                placeholder="your@email.com"
+                className="flex-1 min-w-0 rounded-lg border border-mg-border bg-mg-surface-2 px-3 py-2 text-sm text-white placeholder:text-mg-text-dim outline-none focus:border-mg-accent"
               />
-            </svg>
-          </a>
-        ))}
+              <button className="shrink-0 rounded-lg bg-mg-accent px-4 py-2 text-sm font-bold text-black hover:bg-mg-accent-dim transition-colors">
+                Join
+              </button>
+            </div>
+          </div>
+        </aside>
       </div>
     </div>
   );
 }
 
 // ============================================================
-// PREDICTIONS CTA (Sidebar)
+// ARTICLE CARD
 // ============================================================
-function PredictionsCTA() {
+function ArticleCard({ article, size = "md" }: { article: Article; size?: "sm" | "md" }) {
+  const imgH = size === "sm" ? "h-40" : "h-48";
   return (
-    <div className="relative overflow-hidden rounded-2xl border border-mg-accent/20 bg-gradient-to-br from-mg-accent/5 to-mg-blue/5 p-6">
-      <div className="absolute -right-8 -top-8 h-32 w-32 rounded-full bg-mg-accent/10 blur-2xl" />
-      <div className="relative">
-        <h3 className="text-lg font-bold text-white">
-          Predict &amp; Win
-        </h3>
-        <p className="mt-2 text-sm text-mg-text-muted">
-          Test your football knowledge. Predict match scores, earn XP, climb the
-          leaderboard, and unlock exclusive badges.
-        </p>
-        <a
-          href="/predictions"
-          className="mt-4 inline-flex rounded-full bg-gradient-to-r from-[#00ff88] to-[#4488ff] px-6 py-2.5 text-sm font-bold text-black transition-all hover:shadow-lg hover:shadow-[#00ff88]/20"
-        >
-          Start Predicting
-        </a>
+    <Link href={`/news#${article.id}`} className="mg-card-link group">
+      <div className={`relative ${imgH} overflow-hidden`}>
+        <Image src={article.image} alt={article.imageAlt} fill className="mg-card-img object-cover" sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw" />
+        <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
+        <div className="absolute top-3 left-3 flex items-center gap-1.5">
+          <span className="mg-badge text-white" style={{ backgroundColor: CATEGORY_COLORS[article.category] }}>{article.category}</span>
+          {article.tag && <span className="mg-badge bg-black/50 text-mg-gold backdrop-blur-sm">{article.tag}</span>}
+        </div>
       </div>
-    </div>
+      <div className="p-4">
+        <h3 className="text-sm font-bold text-white leading-snug line-clamp-2 mb-2 group-hover:text-mg-accent transition-colors">{article.title}</h3>
+        {size !== "sm" && <p className="text-xs text-mg-text-muted line-clamp-2 mb-3">{article.excerpt}</p>}
+        <div className="flex items-center gap-2 text-[10px] text-mg-text-dim">
+          <span className="font-semibold text-mg-accent">{article.author}</span>
+          <span>•</span>
+          <span>{formatRelativeTime(article.publishedAt)}</span>
+          <span>•</span>
+          <span>{article.readTime} min</span>
+        </div>
+      </div>
+    </Link>
+  );
+}
+
+// ============================================================
+// ARTICLE ROW CARD
+// ============================================================
+function ArticleRowCard({ article }: { article: Article }) {
+  return (
+    <Link href={`/news#${article.id}`} className="mg-card-link group flex gap-4 p-3">
+      <div className="relative h-20 w-28 shrink-0 rounded-lg overflow-hidden">
+        <Image src={article.image} alt={article.imageAlt} fill className="mg-card-img object-cover" sizes="112px" />
+      </div>
+      <div className="flex-1 min-w-0 py-0.5">
+        <div className="flex items-center gap-1.5 mb-1.5">
+          <span className="mg-badge text-white" style={{ backgroundColor: CATEGORY_COLORS[article.category] }}>{article.category}</span>
+        </div>
+        <h3 className="text-sm font-semibold text-white line-clamp-2 leading-snug group-hover:text-mg-accent transition-colors">{article.title}</h3>
+        <div className="flex items-center gap-2 mt-1.5 text-[10px] text-mg-text-dim">
+          <span>{formatRelativeTime(article.publishedAt)}</span>
+          <span>•</span>
+          <span>{article.readTime} min read</span>
+        </div>
+      </div>
+    </Link>
   );
 }
