@@ -33,7 +33,7 @@ export default async function PredictionsPage() {
     return d.toISOString().split("T")[0];
   });
 
-  let allFixtures;
+  let allFixtures: Awaited<ReturnType<typeof getFixturesByDate>> = [];
   try {
     allFixtures = (
       await Promise.all(dates.map((date) => getFixturesByDate(date)))
