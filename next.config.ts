@@ -8,6 +8,16 @@ const nextConfig: NextConfig = {
         hostname: "cdn.sportmonks.com",
         pathname: "/images/**",
       },
+      {
+        protocol: "https",
+        hostname: "r2.thesportsdb.com",
+        pathname: "/images/**",
+      },
+      {
+        protocol: "https",
+        hostname: "www.thesportsdb.com",
+        pathname: "/images/**",
+      },
     ],
   },
 };
