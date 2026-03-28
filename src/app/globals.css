@@ -1,0 +1,140 @@
+@import "tailwindcss";
+
+@theme {
+  --color-mg-bg: #06060b;
+  --color-mg-surface: #0c0c14;
+  --color-mg-card: #111119;
+  --color-mg-card-hover: #18182a;
+  --color-mg-border: #1c1c30;
+  --color-mg-border-light: #2a2a44;
+  --color-mg-text: #e2e2ea;
+  --color-mg-text-muted: #7e7e9a;
+  --color-mg-accent: #00ff88;
+  --color-mg-accent-dim: #00cc6a;
+  --color-mg-blue: #4488ff;
+  --color-mg-purple: #8844ff;
+  --color-mg-orange: #ff8844;
+  --color-mg-red: #ff4455;
+  --color-mg-yellow: #ffcc00;
+  --color-mg-live: #ff2244;
+
+  --font-sans: "Inter", ui-sans-serif, system-ui, -apple-system, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, monospace;
+}
+
+@layer base {
+  * {
+    border-color: var(--color-mg-border);
+  }
+
+  html {
+    scroll-behavior: smooth;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  body {
+    background-color: var(--color-mg-bg);
+    color: var(--color-mg-text);
+    font-family: var(--font-sans);
+  }
+
+  ::selection {
+    background-color: rgba(0, 255, 136, 0.2);
+    color: #fff;
+  }
+
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: var(--color-mg-bg);
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background: var(--color-mg-border-light);
+    border-radius: 3px;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    background: var(--color-mg-text-muted);
+  }
+}
+
+@layer components {
+  .mg-glow {
+    box-shadow: 0 0 20px rgba(0, 255, 136, 0.08), 0 0 60px rgba(0, 255, 136, 0.04);
+  }
+
+  .mg-glow-blue {
+    box-shadow: 0 0 20px rgba(68, 136, 255, 0.08), 0 0 60px rgba(68, 136, 255, 0.04);
+  }
+
+  .mg-live-pulse {
+    animation: livePulse 2s ease-in-out infinite;
+  }
+
+  .mg-gradient-text {
+    background: linear-gradient(135deg, #00ff88, #4488ff);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .mg-card {
+    background-color: var(--color-mg-card);
+    border: 1px solid var(--color-mg-border);
+    border-radius: 16px;
+    transition: all 0.2s ease;
+  }
+
+  .mg-card:hover {
+    background-color: var(--color-mg-card-hover);
+    border-color: var(--color-mg-border-light);
+  }
+
+  .mg-score-live {
+    animation: scoreFlash 0.6s ease-out;
+  }
+
+  .mg-ticker {
+    animation: ticker 30s linear infinite;
+  }
+}
+
+@keyframes livePulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.4; }
+}
+
+@keyframes scoreFlash {
+  0% { transform: scale(1.3); color: #00ff88; }
+  100% { transform: scale(1); color: inherit; }
+}
+
+@keyframes ticker {
+  0% { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
+}
+
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(16px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+.animate-fade-in-up {
+  animation: fadeInUp 0.5s ease-out forwards;
+}
+
+.animate-shimmer {
+  background: linear-gradient(90deg, var(--color-mg-card) 25%, var(--color-mg-card-hover) 50%, var(--color-mg-card) 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s ease-in-out infinite;
+}
