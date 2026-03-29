@@ -19,6 +19,7 @@ export interface Article {
   featured?: boolean;
   breaking?: boolean;
   trending?: boolean;
+  sourceUrl?: string;
 }
 
 export type ArticleCategory =
