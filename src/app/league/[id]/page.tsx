@@ -52,7 +52,7 @@ export default async function LeagueDetailPage({
   if (!meta || !info) {
     return (
       <div className="mx-auto max-w-4xl px-4 py-16 text-center">
-        <h1 className="text-2xl font-bold text-white">League not found</h1>
+        <h1 className="text-2xl font-bold text-mg-text">League not found</h1>
         <p className="mt-2 text-mg-text-muted">
           This league is not currently supported.
         </p>
@@ -97,7 +97,7 @@ export default async function LeagueDetailPage({
           </span>
         </div>
         <h1
-          className="text-3xl sm:text-4xl font-black text-white"
+          className="text-3xl sm:text-4xl font-black text-mg-text"
           style={{ fontFamily: "Oswald, sans-serif" }}
         >
           {info.name.toUpperCase()}
@@ -170,7 +170,7 @@ export default async function LeagueDetailPage({
                       className="h-6 w-6 shrink-0 object-contain"
                     />
                   )}
-                  <span className="font-medium text-white truncate text-sm">
+                  <span className="font-medium text-mg-text truncate text-sm">
                     {entry.participant?.name || `Team ${entry.participant_id}`}
                   </span>
                 </div>
@@ -189,7 +189,7 @@ export default async function LeagueDetailPage({
                 >
                   {typeof gd === "number" && gd > 0 ? `+${gd}` : gd}
                 </span>
-                <span className="text-center font-bold text-white">
+                <span className="text-center font-bold text-mg-text">
                   {entry.points ?? "-"}
                 </span>
               </div>
