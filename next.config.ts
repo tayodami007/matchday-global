@@ -19,6 +19,18 @@ const nextConfig: NextConfig = {
         protocol: "https",
         hostname: "images.sportmonks.com",
       },
+      {
+        protocol: "https",
+        hostname: "ichef.bbci.co.uk",
+      },
+      {
+        protocol: "https",
+        hostname: "**.bbc.co.uk",
+      },
+      {
+        protocol: "https",
+        hostname: "images.unsplash.com",
+      },
     ],
   },
 };
