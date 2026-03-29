@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { fetchLiveNews } from "@/lib/news";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -77,11 +78,28 @@ const FOOTER_COLS = [
   },
 ];
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
+  // Fetch live headlines for ticker
+  let tickerHeadlines: string[] = [];
+  try {
+    const articles = await fetchLiveNews();
+    tickerHeadlines = articles.slice(0, 6).map((a) => a.title);
+  } catch {
+    tickerHeadlines = [];
+  }
+  // Fallback if no live news
+  if (tickerHeadlines.length === 0) {
+    tickerHeadlines = [
+      "Welcome to Matchday Global — The Game Never Stops",
+      "Follow the latest football news, transfers, and scores",
+      "Premier League, Champions League, La Liga & more",
+    ];
+  }
+
   return (
     <html lang="en">
       <head>
@@ -170,46 +188,19 @@ export default function RootLayout({
               </div>
               <div className="overflow-hidden flex-1 relative">
                 <div className="mg-ticker flex items-center gap-12 whitespace-nowrap px-4">
-                  <span className="text-xs text-mg-text-secondary">
-                    Salah confirms Liverpool exit — End of an era at Anfield
-                  </span>
-                  <span className="text-mg-accent text-xs">•</span>
-                  <span className="text-xs text-mg-text-secondary">
-                    Arsenal 9 points clear — Title race all but over
-                  </span>
-                  <span className="text-mg-accent text-xs">•</span>
-                  <span className="text-xs text-mg-text-secondary">
-                    Zidane in talks with Manchester United over manager role
-                  </span>
-                  <span className="text-mg-accent text-xs">•</span>
-                  <span className="text-xs text-mg-text-secondary">
-                    Griezmann set for shock MLS move — Reports
-                  </span>
-                  <span className="text-mg-accent text-xs">•</span>
-                  <span className="text-xs text-mg-text-secondary">
-                    Champions League QF draw: Arsenal vs Sporting, Real Madrid vs Bayern
-                  </span>
-                  <span className="text-mg-accent text-xs">•</span>
+                  {tickerHeadlines.map((headline, i) => (
+                    <span key={`t1-${i}`} className="flex items-center gap-12">
+                      <span className="text-xs text-mg-text-secondary">{headline}</span>
+                      <span className="text-mg-accent text-xs">•</span>
+                    </span>
+                  ))}
                   {/* Duplicate for seamless loop */}
-                  <span className="text-xs text-mg-text-secondary">
-                    Salah confirms Liverpool exit — End of an era at Anfield
-                  </span>
-                  <span className="text-mg-accent text-xs">•</span>
-                  <span className="text-xs text-mg-text-secondary">
-                    Arsenal 9 points clear — Title race all but over
-                  </span>
-                  <span className="text-mg-accent text-xs">•</span>
-                  <span className="text-xs text-mg-text-secondary">
-                    Zidane in talks with Manchester United over manager role
-                  </span>
-                  <span className="text-mg-accent text-xs">•</span>
-                  <span className="text-xs text-mg-text-secondary">
-                    Griezmann set for shock MLS move — Reports
-                  </span>
-                  <span className="text-mg-accent text-xs">•</span>
-                  <span className="text-xs text-mg-text-secondary">
-                    Champions League QF draw: Arsenal vs Sporting, Real Madrid vs Bayern
-                  </span>
+                  {tickerHeadlines.map((headline, i) => (
+                    <span key={`t2-${i}`} className="flex items-center gap-12">
+                      <span className="text-xs text-mg-text-secondary">{headline}</span>
+                      <span className="text-mg-accent text-xs">•</span>
+                    </span>
+                  ))}
                 </div>
               </div>
             </div>
@@ -294,5 +285,6 @@ export default function RootLayout({
         </footer>
       </body>
     </html>
-  );
+  
+ "�
 }
