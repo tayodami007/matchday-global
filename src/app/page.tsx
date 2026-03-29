@@ -30,13 +30,34 @@ export const revalidate = 30;
 
 export default async function HomePage() {
   // Fetch live data (graceful fallback)
-  const today = new Date().toISOString().split("T")[0];
-  let todayFixtures: Awaited<ReturnType<typeof getFixturesByDate>> = [];
+  const now = new Date();
+  const today = now.toISOString().split("T")[0];
+  const tomorrow = new Date(now.getTime() + 86400000).toISOString().split("T")[0];
+  const yesterday = new Date(now.getTime() - 86400000).toISOString().split("T")[0];
+
+  let displayFixtures: Awaited<ReturnType<typeof getFixturesByDate>> = [];
+  let fixturesLabel = "Today";
   let plStandings: Awaited<ReturnType<typeof getStandingsByLeague>> = [];
+
+  // Try today first, then tomorrow (upcoming), then yesterday (recent results)
   try {
-    todayFixtures = await getFixturesByDate(today);
+    const todayFixtures = await getFixturesByDate(today);
+    if (todayFixtures.length > 0) {
+      displayFixtures = todayFixtures;
+      fixturesLabel = "Today";
+    } else {
+      const tomorrowFixtures = await getFixturesByDate(tomorrow);
+      if (tomorrowFixtures.length > 0) {
+        displayFixtures = tomorrowFixtures;
+        fixturesLabel = "Tomorrow";
+      } else {
+        const yesterdayFixtures = await getFixturesByDate(yesterday);
+        displayFixtures = yesterdayFixtures;
+        fixturesLabel = "Yesterday";
+      }
+    }
   } catch {
-    todayFixtures = [];
+    displayFixtures = [];
   }
   try {
     plStandings = await getStandingsByLeague(8);
@@ -74,11 +95,8 @@ export default async function HomePage() {
     .sort((a, b) => (a.position ?? 99) - (b.position ?? 99))
     .slice(0, 10);
 
-  // Filter fixtures to major leagues
-  const majorLeagueIds = Object.keys(LEAGUE_META).map(Number);
-  const liveAndRecent = (todayFixtures || [])
-    .filter((f) => majorLeagueIds.includes(f.league_id))
-    .slice(0, 8);
+  // Show all fixtures (not just 7 leagues — international matches, cups, etc. matter)
+  const liveAndRecent = (displayFixtures || []).slice(0, 10);
 
   return (
     <div className="mx-auto max-w-7xl px-4 sm:px-6 py-6">
@@ -88,7 +106,7 @@ export default async function HomePage() {
         <div className="min-w-0 space-y-10">
           {/* ==== HERO STORY ==== */}
           {featured && (
-            <Link href={`/news#${featured.id}`} className="block">
+            <Link href={featured.sourceUrl || `/news#${featured.id}`} target={featured.sourceUrl ? "_blank" : undefined} rel={featured.sourceUrl ? "noopener noreferrer" : undefined} className="block">
               <div className="mg-hero relative">
                 <Image
                   src={featured.image}
@@ -207,6 +225,7 @@ export default async function HomePage() {
               <div className="flex items-center gap-2">
                 <span className="h-2 w-2 rounded-full bg-mg-red mg-live-pulse" />
                 <h3>Scores</h3>
+                <span className="text-[10px] font-medium text-mg-text-dim ml-1">{fixturesLabel}</span>
               </div>
               <Link href="/predictions" className="text-xs text-mg-accent font-semibold hover:opacity-80 transition-opacity">
                 All Scores →
@@ -214,7 +233,7 @@ export default async function HomePage() {
             </div>
             {liveAndRecent.length === 0 ? (
               <div className="px-4 py-8 text-center">
-                <p className="text-sm text-mg-text-muted">No matches today</p>
+                <p className="text-sm text-mg-text-muted">No matches scheduled</p>
                 <p className="text-xs text-mg-text-dim mt-1">Check back when fixtures resume</p>
               </div>
             ) : (
@@ -228,13 +247,13 @@ export default async function HomePage() {
                     <Link key={fixture.id} href={`/match/${fixture.id}`} className="mg-score-row">
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center justify-between gap-2">
-                          <span className="text-xs font-medium text-white truncate">{home?.name || "Home"}</span>
+                          <span className="text-xs font-medium text-mg-text truncate">{home?.name || "Home"}</span>
                           <span className={`text-xs font-bold ${status.isLive ? "text-mg-accent" : "text-white"}`}>
                             {status.isFinished || status.isLive ? scores.home : ""}
                           </span>
                         </div>
                         <div className="flex items-center justify-between gap-2 mt-0.5">
-                          <span className="text-xs font-medium text-white truncate">{away?.name || "Away"}</span>
+                          <span className="text-xs font-medium text-mg-text truncate">{away?.name || "Away"}</span>
                           <span className={`text-xs font-bold ${status.isLive ? "text-mg-accent" : "text-white"}`}>
                             {status.isFinished || status.isLive ? scores.away : ""}
                           </span>
@@ -284,7 +303,7 @@ export default async function HomePage() {
                   <span className={`text-xs font-bold ${(entry.position ?? 0) <= 4 ? "text-mg-blue" : (entry.position ?? 0) >= 18 ? "text-mg-red" : "text-mg-text-muted"}`}>
                     {entry.position}
                   </span>
-                  <span className="text-xs font-medium text-white truncate">
+                  <span className="text-xs font-medium text-mg-text truncate">
                     {entry.participant?.name || `Team ${entry.participant_id}`}
                   </span>
                   <span className="text-xs text-mg-text-muted text-center">
@@ -299,7 +318,7 @@ export default async function HomePage() {
                   <span className="text-xs text-mg-text-muted text-center">
                     {entry.details?.find((d) => d.type_id === 132)?.value ?? "-"}
                   </span>
-                  <span className="text-xs font-bold text-white text-center">{entry.points ?? "-"}</span>
+                  <span className="text-xs font-bold text-mg-text text-center">{entry.points ?? "-"}</span>
                 </div>
               ))
             )}
@@ -315,7 +334,7 @@ export default async function HomePage() {
             </p>
             <Link
               href="/predictions"
-              className="inline-flex items-center gap-2 rounded-lg bg-gradient-to-r from-[#00ff88] to-[#4488ff] px-6 py-2.5 text-sm font-bold text-black transition-transform hover:scale-105"
+              className="inline-flex items-center gap-2 rounded-lg bg-gradient-to-r from-[#34D399] to-[#60A5FA] px-6 py-2.5 text-sm font-bold text-[#111827] transition-transform hover:scale-105"
             >
               Make Predictions →
             </Link>
@@ -328,12 +347,12 @@ export default async function HomePage() {
             </div>
             <div className="divide-y divide-mg-border">
               {ARTICLES.slice(0, 5).map((article, i) => (
-                <Link key={article.id} href={`/news#${article.id}`} className="flex items-start gap-3 px-4 py-3 hover:bg-mg-surface-2 transition-colors">
+                <Link key={article.id} href={article.sourceUrl || `/news#${article.id}`} target={article.sourceUrl ? "_blank" : undefined} rel={article.sourceUrl ? "noopener noreferrer" : undefined} className="flex items-start gap-3 px-4 py-3 hover:bg-[#F3F4F6] transition-colors">
                   <span className="text-2xl font-black text-mg-border-light leading-none mt-0.5" style={{ fontFamily: "Oswald, sans-serif" }}>
                     {String(i + 1).padStart(2, "0")}
                   </span>
                   <div className="min-w-0">
-                    <p className="text-xs font-semibold text-white line-clamp-2 leading-snug">{article.title}</p>
+                    <p className="text-xs font-semibold text-mg-text line-clamp-2 leading-snug">{article.title}</p>
                     <span className="text-[10px] text-mg-text-dim mt-1 block">{formatRelativeTime(article.publishedAt)}</span>
                   </div>
                 </Link>
@@ -343,7 +362,7 @@ export default async function HomePage() {
 
           {/* ==== NEWSLETTER ==== */}
           <div className="mg-card p-5">
-            <h3 className="text-base font-bold text-white mb-1" style={{ fontFamily: "Oswald, sans-serif" }}>
+            <h3 className="text-base font-bold text-mg-text mb-1" style={{ fontFamily: "Oswald, sans-serif" }}>
               NEVER MISS A STORY
             </h3>
             <p className="text-xs text-mg-text-muted mb-3">
@@ -353,9 +372,9 @@ export default async function HomePage() {
               <input
                 type="email"
                 placeholder="your@email.com"
-                className="flex-1 min-w-0 rounded-lg border border-mg-border bg-mg-surface-2 px-3 py-2 text-sm text-white placeholder:text-mg-text-dim outline-none focus:border-mg-accent"
+                className="flex-1 min-w-0 rounded-lg border border-mg-border bg-white px-3 py-2 text-sm text-mg-text placeholder:text-mg-text-dim outline-none focus:border-mg-accent"
               />
-              <button className="shrink-0 rounded-lg bg-mg-accent px-4 py-2 text-sm font-bold text-black hover:bg-mg-accent-dim transition-colors">
+              <button className="shrink-0 rounded-lg bg-mg-accent px-4 py-2 text-sm font-bold text-white hover:bg-mg-accent-dim transition-colors">
                 Join
               </button>
             </div>
@@ -372,7 +391,7 @@ export default async function HomePage() {
 function ArticleCard({ article, size = "md" }: { article: Article; size?: "sm" | "md" }) {
   const imgH = size === "sm" ? "h-40" : "h-48";
   return (
-    <Link href={`/news#${article.id}`} className="mg-card-link group">
+    <Link href={article.sourceUrl || `/news#${article.id}`} target={article.sourceUrl ? "_blank" : undefined} rel={article.sourceUrl ? "noopener noreferrer" : undefined} className="mg-card-link group">
       <div className={`relative ${imgH} overflow-hidden`}>
         <Image src={article.image} alt={article.imageAlt} fill className="mg-card-img object-cover" sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw" />
         <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
@@ -382,7 +401,7 @@ function ArticleCard({ article, size = "md" }: { article: Article; size?: "sm" |
         </div>
       </div>
       <div className="p-4">
-        <h3 className="text-sm font-bold text-white leading-snug line-clamp-2 mb-2 group-hover:text-mg-accent transition-colors">{article.title}</h3>
+        <h3 className="text-sm font-bold text-mg-text leading-snug line-clamp-2 mb-2 group-hover:text-mg-accent transition-colors">{article.title}</h3>
         {size !== "sm" && <p className="text-xs text-mg-text-muted line-clamp-2 mb-3">{article.excerpt}</p>}
         <div className="flex items-center gap-2 text-[10px] text-mg-text-dim">
           <span className="font-semibold text-mg-accent">{article.author}</span>
@@ -401,7 +420,7 @@ function ArticleCard({ article, size = "md" }: { article: Article; size?: "sm" |
 // ============================================================
 function ArticleRowCard({ article }: { article: Article }) {
   return (
-    <Link href={`/news#${article.id}`} className="mg-card-link group flex gap-4 p-3">
+    <Link href={article.sourceUrl || `/news#${article.id}`} target={article.sourceUrl ? "_blank" : undefined} rel={article.sourceUrl ? "noopener noreferrer" : undefined} className="mg-card-link group flex gap-4 p-3">
       <div className="relative h-20 w-28 shrink-0 rounded-lg overflow-hidden">
         <Image src={article.image} alt={article.imageAlt} fill className="mg-card-img object-cover" sizes="112px" />
       </div>
@@ -409,7 +428,7 @@ function ArticleRowCard({ article }: { article: Article }) {
         <div className="flex items-center gap-1.5 mb-1.5">
           <span className="mg-badge text-white" style={{ backgroundColor: CATEGORY_COLORS[article.category] }}>{article.category}</span>
         </div>
-        <h3 className="text-sm font-semibold text-white line-clamp-2 leading-snug group-hover:text-mg-accent transition-colors">{article.title}</h3>
+        <h3 className="text-sm font-semibold text-mg-text line-clamp-2 leading-snug group-hover:text-mg-accent transition-colors">{article.title}</h3>
         <div className="flex items-center gap-2 mt-1.5 text-[10px] text-mg-text-dim">
           <span>{formatRelativeTime(article.publishedAt)}</span>
           <span>•</span>
