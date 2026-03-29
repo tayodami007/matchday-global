@@ -45,7 +45,7 @@ export default async function MatchDetailPage({
   if (!fixture) {
     return (
       <div className="mx-auto max-w-4xl px-4 py-16 text-center">
-        <h1 className="text-2xl font-bold text-white">Match not found</h1>
+        <h1 className="text-2xl font-bold text-mg-text">Match not found</h1>
         <p className="mt-2 text-mg-text-muted">
           This match may not exist or the data is unavailable.
         </p>
@@ -132,7 +132,7 @@ export default async function MatchDetailPage({
                 className="h-[72px] w-[72px] object-contain"
               />
             )}
-            <span className="text-base font-bold text-white text-center">
+            <span className="text-base font-bold text-mg-text text-center">
               {home?.name || "Home"}
             </span>
           </div>
@@ -143,7 +143,7 @@ export default async function MatchDetailPage({
               <div className="flex items-center gap-4">
                 <span
                   className={`text-5xl font-black ${
-                    status.isLive ? "text-mg-accent" : "text-white"
+                    status.isLive ? "text-mg-accent" : "text-mg-text"
                   }`}
                   style={{ fontFamily: "Oswald, sans-serif" }}
                 >
@@ -152,7 +152,7 @@ export default async function MatchDetailPage({
                 <span className="text-2xl text-mg-text-dim font-light">:</span>
                 <span
                   className={`text-5xl font-black ${
-                    status.isLive ? "text-mg-accent" : "text-white"
+                    status.isLive ? "text-mg-accent" : "text-mg-text"
                   }`}
                   style={{ fontFamily: "Oswald, sans-serif" }}
                 >
@@ -196,7 +196,7 @@ export default async function MatchDetailPage({
                 className="h-[72px] w-[72px] object-contain"
               />
             )}
-            <span className="text-base font-bold text-white text-center">
+            <span className="text-base font-bold text-mg-text text-center">
               {away?.name || "Away"}
             </span>
           </div>
@@ -229,7 +229,7 @@ export default async function MatchDetailPage({
                   </span>
                   <span className="text-base">{icon}</span>
                   <div className="min-w-0">
-                    <span className="text-sm font-medium text-white">
+                    <span className="text-sm font-medium text-mg-text">
                       {event.player_name || event.player?.display_name || ""}
                     </span>
                     {event.related_player_name && (
@@ -277,9 +277,9 @@ export default async function MatchDetailPage({
               return Object.values(statMap).map((s) => (
                 <div key={s.name}>
                   <div className="flex items-center justify-between text-xs text-mg-text-muted mb-1">
-                    <span className="font-medium text-white">{String(s.home)}</span>
+                    <span className="font-medium text-mg-text">{String(s.home)}</span>
                     <span>{s.name}</span>
-                    <span className="font-medium text-white">{String(s.away)}</span>
+                    <span className="font-medium text-mg-text">{String(s.away)}</span>
                   </div>
                   <div className="flex gap-1 h-1.5">
                     <div
@@ -324,7 +324,7 @@ export default async function MatchDetailPage({
         </p>
         <Link
           href="/predictions"
-          className="inline-flex items-center gap-2 rounded-lg bg-gradient-to-r from-[#00ff88] to-[#4488ff] px-6 py-2.5 text-sm font-bold text-black transition-transform hover:scale-105"
+          className="inline-flex items-center gap-2 rounded-lg bg-gradient-to-r from-[#34D399] to-[#60A5FA] px-6 py-2.5 text-sm font-bold text-[#111827] transition-transform hover:scale-105"
         >
           View All Predictions →
         </Link>
