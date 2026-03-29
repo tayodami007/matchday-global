@@ -285,6 +285,5 @@ export default async function RootLayout({
         </footer>
       </body>
     </html>
-  
- "¾
+  );
 }
