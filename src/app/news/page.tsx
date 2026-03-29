@@ -53,7 +53,7 @@ export default async function NewsPage() {
       {/* Header */}
       <div className="mb-8">
         <h1
-          className="text-3xl sm:text-4xl font-black text-white mb-2"
+          className="text-3xl sm:text-4xl font-black text-mg-text mb-2"
           style={{ fontFamily: "Oswald, sans-serif" }}
         >
           FOOTBALL NEWS
@@ -66,7 +66,7 @@ export default async function NewsPage() {
 
       {/* Category pills */}
       <div className="flex flex-wrap gap-2 mb-8">
-        <span className="mg-badge bg-mg-accent text-black cursor-pointer">
+        <span className="mg-badge bg-mg-accent text-white cursor-pointer">
           All
         </span>
         {CATEGORIES.map((cat) => (
@@ -130,7 +130,7 @@ function NewsArticleCard({ article }: { article: Article }) {
 
       {/* Content */}
       <div className="p-5">
-        <h2 className="text-base font-bold text-white leading-snug line-clamp-2 mb-2 group-hover:text-mg-accent transition-colors">
+        <h2 className="text-base font-bold text-mg-text leading-snug line-clamp-2 mb-2 group-hover:text-mg-accent transition-colors">
           {article.title}
         </h2>
         <p className="text-sm text-mg-text-muted line-clamp-3 mb-4 leading-relaxed">
