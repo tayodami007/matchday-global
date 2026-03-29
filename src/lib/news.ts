@@ -82,13 +82,13 @@ const TEAM_IMAGE_MAP: Record<string, string> = {
   wsl: `${R2}/league/fanart/Womens_Super_League.jpg`,
 };
 
-// Fallback images for when no keyword matches
+// Fallback images — reliable free football images from Unsplash
 const FALLBACK_IMAGES = [
-  `${R2}/league/fanart/English_Premier_League.jpg`,
-  `${R2}/league/fanart/Spanish_La_Liga.jpg`,
-  `${R2}/league/fanart/German_Bundesliga.jpg`,
-  `${R2}/league/fanart/Italian_Serie_A.jpg`,
-  `${R2}/league/fanart/French_Ligue_1.jpg`,
+  "https://images.unsplash.com/photo-1489944440615-453fc2b6a9a9?w=800&q=80",
+  "https://images.unsplash.com/photo-1431324155629-1a6deb1dec8d?w=800&q=80",
+  "https://images.unsplash.com/photo-1522778119026-d647f0596c20?w=800&q=80",
+  "https://images.unsplash.com/photo-1574629810360-7efbbe195018?w=800&q=80",
+  "https://images.unsplash.com/photo-1508098682722-e99c643e7f0b?w=800&q=80",
 ];
 
 // ---- CATEGORY DETECTION ----
@@ -120,14 +120,8 @@ function findBestImage(title: string, description: string): string {
   const text = `${title} ${description}`.toLowerCase();
 
   // Check each keyword — longest match first for specificity
-  const sortedKeys = Object.keys(TEAM_IMAGE_MAP).sort((a, b) => b.length - a.length);
-  for (const keyword of sortedKeys) {
-    if (text.includes(keyword)) {
-      return TEAM_IMAGE_MAP[keyword];
-    }
-  }
-
-  // Fallback: rotate through generic football images
+  // TheSportsDB R2 CDN is currently down — skip TEAM_IMAGE_MAP lookup
+  // Just use reliable fallback images (BBC thumbnails handle most articles)
   const hash = title.split("").reduce((acc, c) => acc + c.charCodeAt(0), 0);
   return FALLBACK_IMAGES[hash % FALLBACK_IMAGES.length];
 }
@@ -177,6 +171,7 @@ function parseRSSItem(itemXml: string): Partial<Article> | null {
     author: "BBC Sport",
     publishedAt: pubDate ? new Date(pubDate).toISOString() : new Date().toISOString(),
     readTime: Math.max(2, Math.ceil(description.split(" ").length / 50)),
+    sourceUrl: link || guid || undefined,
   };
 }
 
