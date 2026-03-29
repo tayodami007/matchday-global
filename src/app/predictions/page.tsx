@@ -63,7 +63,7 @@ export default async function PredictionsPage() {
       {/* Header */}
       <div className="mb-8">
         <h1
-          className="text-3xl sm:text-4xl font-black text-white mb-2"
+          className="text-3xl sm:text-4xl font-black text-mg-text mb-2"
           style={{ fontFamily: "Oswald, sans-serif" }}
         >
           MATCH PREDICTIONS
@@ -87,7 +87,7 @@ export default async function PredictionsPage() {
             Think you know the score? Get the best odds on today&apos;s matches.
           </p>
         </div>
-        <span className="inline-flex items-center gap-2 rounded-lg bg-gradient-to-r from-[#00ff88] to-[#4488ff] px-6 py-3 text-sm font-bold text-black whitespace-nowrap">
+        <span className="inline-flex items-center gap-2 rounded-lg bg-gradient-to-r from-[#34D399] to-[#60A5FA] px-6 py-3 text-sm font-bold text-[#111827] whitespace-nowrap">
           Best Odds Available →
         </span>
       </div>
@@ -95,7 +95,7 @@ export default async function PredictionsPage() {
       {/* Fixtures by date */}
       {Object.keys(grouped).length === 0 ? (
         <div className="mg-card flex flex-col items-center px-8 py-16 text-center">
-          <h3 className="text-lg font-bold text-white">
+          <h3 className="text-lg font-bold text-mg-text">
             No upcoming matches found
           </h3>
           <p className="mt-2 text-sm text-mg-text-muted">
@@ -144,7 +144,7 @@ export default async function PredictionsPage() {
                               className="h-8 w-8 shrink-0 object-contain"
                             />
                           )}
-                          <span className="truncate text-sm font-bold text-white">
+                          <span className="truncate text-sm font-bold text-mg-text">
                             {home?.name || "Home"}
                           </span>
                         </div>
@@ -157,7 +157,7 @@ export default async function PredictionsPage() {
                                 className={`text-xl font-black ${
                                   status.isLive
                                     ? "text-mg-accent"
-                                    : "text-white"
+                                    : "text-mg-text"
                                 }`}
                               >
                                 {scores.home}
@@ -169,7 +169,7 @@ export default async function PredictionsPage() {
                                 className={`text-xl font-black ${
                                   status.isLive
                                     ? "text-mg-accent"
-                                    : "text-white"
+                                    : "text-mg-text"
                                 }`}
                               >
                                 {scores.away}
