@@ -115,16 +115,16 @@ export default async function RootLayout({
         />
       </head>
       <body className="min-h-screen flex flex-col">
-        {/* ============ NAVBAR ============ */}
-        <header className="sticky top-0 z-50 border-b border-mg-border bg-mg-bg/95 backdrop-blur-md">
+        {/* ============ NAVBAR (dark header like ESPN/Sky Sports) ============ */}
+        <header className="sticky top-0 z-50 bg-[#111827] border-b border-[#1F2937]">
           <div className="mx-auto max-w-7xl px-4 sm:px-6">
             {/* Top bar */}
             <div className="flex h-14 items-center justify-between gap-6">
               {/* Logo */}
               <Link href="/" className="flex items-center gap-2 shrink-0">
-                <div className="flex items-center justify-center h-8 w-8 rounded-lg bg-gradient-to-br from-[#00ff88] to-[#4488ff]">
+                <div className="flex items-center justify-center h-8 w-8 rounded-lg bg-gradient-to-br from-[#34D399] to-[#60A5FA]">
                   <span
-                    className="text-sm font-black text-black leading-none"
+                    className="text-sm font-black text-[#111827] leading-none"
                     style={{ fontFamily: "Oswald, sans-serif" }}
                   >
                     MG
@@ -135,7 +135,7 @@ export default async function RootLayout({
                   style={{ fontFamily: "Oswald, sans-serif", letterSpacing: "0.04em" }}
                 >
                   MATCHDAY
-                  <span className="mg-gradient-text"> GLOBAL</span>
+                  <span className="mg-gradient-text-light"> GLOBAL</span>
                 </span>
               </Link>
 
@@ -154,11 +154,11 @@ export default async function RootLayout({
 
               {/* Right side */}
               <div className="flex items-center gap-3">
-                <span className="text-[10px] font-bold uppercase tracking-widest text-mg-text-muted hidden lg:block">
+                <span className="text-[10px] font-bold uppercase tracking-widest text-[#6B7280] hidden lg:block">
                   The Game Never Stops
                 </span>
                 {/* Mobile menu button */}
-                <button className="md:hidden p-2 text-mg-text-muted hover:text-white transition-colors">
+                <button className="md:hidden p-2 text-[#9CA3AF] hover:text-white transition-colors">
                   <svg
                     width="20"
                     height="20"
@@ -175,9 +175,9 @@ export default async function RootLayout({
           </div>
 
           {/* Breaking news ticker */}
-          <div className="border-t border-mg-border bg-mg-red/10 overflow-hidden">
+          <div className="border-t border-[#1F2937] bg-[#DC2626]/10 overflow-hidden">
             <div className="flex items-center h-7">
-              <div className="shrink-0 flex items-center gap-1.5 px-3 bg-mg-red h-full">
+              <div className="shrink-0 flex items-center gap-1.5 px-3 bg-[#DC2626] h-full">
                 <span className="h-1.5 w-1.5 rounded-full bg-white mg-live-pulse" />
                 <span
                   className="text-[10px] font-bold uppercase tracking-wider text-white"
@@ -190,15 +190,15 @@ export default async function RootLayout({
                 <div className="mg-ticker flex items-center gap-12 whitespace-nowrap px-4">
                   {tickerHeadlines.map((headline, i) => (
                     <span key={`t1-${i}`} className="flex items-center gap-12">
-                      <span className="text-xs text-mg-text-secondary">{headline}</span>
-                      <span className="text-mg-accent text-xs">•</span>
+                      <span className="text-xs text-[#D1D5DB]">{headline}</span>
+                      <span className="text-[#34D399] text-xs">•</span>
                     </span>
                   ))}
                   {/* Duplicate for seamless loop */}
                   {tickerHeadlines.map((headline, i) => (
                     <span key={`t2-${i}`} className="flex items-center gap-12">
-                      <span className="text-xs text-mg-text-secondary">{headline}</span>
-                      <span className="text-mg-accent text-xs">•</span>
+                      <span className="text-xs text-[#D1D5DB]">{headline}</span>
+                      <span className="text-[#34D399] text-xs">•</span>
                     </span>
                   ))}
                 </div>
@@ -210,16 +210,16 @@ export default async function RootLayout({
         {/* ============ MAIN CONTENT ============ */}
         <main className="flex-1">{children}</main>
 
-        {/* ============ FOOTER ============ */}
-        <footer className="border-t border-mg-border bg-mg-surface mt-16">
+        {/* ============ FOOTER (dark, like header) ============ */}
+        <footer className="border-t border-[#1F2937] bg-[#111827] mt-16">
           <div className="mx-auto max-w-7xl px-4 sm:px-6 py-12">
             <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
               {/* Brand col */}
               <div className="col-span-2 md:col-span-1">
                 <div className="flex items-center gap-2 mb-4">
-                  <div className="flex items-center justify-center h-8 w-8 rounded-lg bg-gradient-to-br from-[#00ff88] to-[#4488ff]">
+                  <div className="flex items-center justify-center h-8 w-8 rounded-lg bg-gradient-to-br from-[#34D399] to-[#60A5FA]">
                     <span
-                      className="text-sm font-black text-black leading-none"
+                      className="text-sm font-black text-[#111827] leading-none"
                       style={{ fontFamily: "Oswald, sans-serif" }}
                     >
                       MG
@@ -232,7 +232,7 @@ export default async function RootLayout({
                     MATCHDAY GLOBAL
                   </span>
                 </div>
-                <p className="text-sm text-mg-text-muted leading-relaxed mb-4">
+                <p className="text-sm text-[#9CA3AF] leading-relaxed mb-4">
                   The game never stops. Your home for football news, predictions,
                   and analysis — 24/7.
                 </p>
@@ -240,7 +240,7 @@ export default async function RootLayout({
                   {["TikTok", "IG", "YT", "X"].map((platform) => (
                     <span
                       key={platform}
-                      className="flex items-center justify-center h-8 w-8 rounded-lg bg-mg-surface-2 border border-mg-border text-xs font-bold text-mg-text-muted hover:text-mg-accent hover:border-mg-accent transition-colors cursor-pointer"
+                      className="flex items-center justify-center h-8 w-8 rounded-lg bg-[#1F2937] border border-[#374151] text-xs font-bold text-[#9CA3AF] hover:text-[#34D399] hover:border-[#34D399] transition-colors cursor-pointer"
                     >
                       {platform}
                     </span>
@@ -252,7 +252,7 @@ export default async function RootLayout({
               {FOOTER_COLS.map((col) => (
                 <div key={col.title}>
                   <h4
-                    className="text-xs font-bold uppercase tracking-wider text-mg-text-muted mb-3"
+                    className="text-xs font-bold uppercase tracking-wider text-[#9CA3AF] mb-3"
                     style={{ fontFamily: "Oswald, sans-serif" }}
                   >
                     {col.title}
@@ -260,7 +260,7 @@ export default async function RootLayout({
                   <ul className="space-y-2">
                     {col.links.map((link) => (
                       <li key={link.label}>
-                        <Link href={link.href} className="mg-footer-link text-sm">
+                        <Link href={link.href} className="text-sm text-[#6B7280] hover:text-[#34D399] transition-colors">
                           {link.label}
                         </Link>
                       </li>
@@ -271,14 +271,14 @@ export default async function RootLayout({
             </div>
 
             {/* Bottom bar */}
-            <div className="mt-10 pt-6 border-t border-mg-border flex flex-col sm:flex-row items-center justify-between gap-3">
-              <p className="text-xs text-mg-text-dim">
+            <div className="mt-10 pt-6 border-t border-[#1F2937] flex flex-col sm:flex-row items-center justify-between gap-3">
+              <p className="text-xs text-[#6B7280]">
                 &copy; {new Date().getFullYear()} Matchday Global. All rights
                 reserved.
               </p>
-              <p className="text-xs text-mg-text-dim">
+              <p className="text-xs text-[#6B7280]">
                 Powered by{" "}
-                <span className="text-mg-text-muted">Kairos Financial Systems</span>
+                <span className="text-[#9CA3AF]">Kairos Financial Systems</span>
               </p>
             </div>
           </div>
