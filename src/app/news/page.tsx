@@ -93,8 +93,10 @@ export default async function NewsPage() {
 }
 
 function NewsArticleCard({ article }: { article: Article }) {
+  const linkUrl = article.sourceUrl || `/news#${article.id}`;
+  const isExternal = !!article.sourceUrl;
   return (
-    <div className="mg-card-link group">
+    <a href={linkUrl} target={isExternal ? "_blank" : undefined} rel={isExternal ? "noopener noreferrer" : undefined} className="mg-card-link group block cursor-pointer">
       {/* Image */}
       <div className="relative h-52 overflow-hidden">
         <Image
@@ -150,6 +152,6 @@ function NewsArticleCard({ article }: { article: Article }) {
           <span>{article.readTime} min read</span>
         </div>
       </div>
-    </div>
+    </a>
   );
 }
