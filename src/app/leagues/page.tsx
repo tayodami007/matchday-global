@@ -79,7 +79,7 @@ export default async function LeaguesPage() {
       {/* Header */}
       <div className="mb-8">
         <h1
-          className="text-3xl sm:text-4xl font-black text-white mb-2"
+          className="text-3xl sm:text-4xl font-black text-mg-text mb-2"
           style={{ fontFamily: "Oswald, sans-serif" }}
         >
           LEAGUES
@@ -120,7 +120,7 @@ export default async function LeaguesPage() {
 
               {/* Info */}
               <div className="p-5">
-                <h2 className="text-lg font-bold text-white group-hover:text-mg-accent transition-colors">
+                <h2 className="text-lg font-bold text-mg-text group-hover:text-mg-accent transition-colors">
                   {info.name}
                 </h2>
                 <p className="text-sm text-mg-text-muted mt-1">
